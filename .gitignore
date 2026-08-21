@@ -1,0 +1,19 @@
+# Xcode / Swift Package Manager
+.build/
+.cache/
+.swiftpm/
+Package.resolved
+
+# Build Artifacts & Applications
+*.app/
+*.zip
+*.dSYM/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
