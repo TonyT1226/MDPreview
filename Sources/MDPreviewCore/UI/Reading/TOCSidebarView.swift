@@ -53,7 +53,7 @@ public struct TOCSidebarView: View {
                 }
             }
         }
-        .frame(width: 220)
+        .frame(minWidth: 180, maxWidth: .infinity)
         .background(.ultraThinMaterial)
     }
 
@@ -169,3 +169,23 @@ struct TOCItemRow: View {
         }
     }
 }
+
+#if DEBUG
+struct TOCSidebarView_Previews: PreviewProvider {
+    static var previews: some View {
+        TOCSidebarView(
+            items: [
+                TOCItem(id: "h1", level: 1, title: "文档标题", children: [
+                    TOCItem(id: "h2a", level: 2, title: "第一节", children: []),
+                    TOCItem(id: "h2b", level: 2, title: "第二节", children: [
+                        TOCItem(id: "h3", level: 3, title: "子章节", children: [])
+                    ])
+                ])
+            ],
+            targetScrollId: .constant(nil)
+        )
+        .frame(height: 400)
+    }
+}
+#endif
+

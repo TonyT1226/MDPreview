@@ -47,3 +47,15 @@ public struct NativeReaderView: View {
         .background(Color(nsColor: .textBackgroundColor))
     }
 }
+
+#if DEBUG
+struct NativeReaderView_Previews: PreviewProvider {
+    static var previews: some View {
+        NativeReaderView(
+            parsedDoc: MarkdownASTParser.parse(markdown: "# 标题\n\n这是段落。\n\n## 子标题\n\n- 列表项 1\n- 列表项 2"),
+            targetScrollId: .constant(nil)
+        )
+        .frame(width: 600, height: 400)
+    }
+}
+#endif

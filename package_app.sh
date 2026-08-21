@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "🚀 开始打包 MDPreview.app ..."
+echo "🚀 开始打包 MDPreview.app 与 MDPreview.dmg (v1.0.0)..."
 
 # 1. 编译 Release 优化版本
 echo "📦 正在编译 Release 二进制文件..."
@@ -24,7 +24,7 @@ cp ".build/release/${APP_NAME}" "${MACOS_DIR}/${APP_NAME}"
 cp "Resources/AppIcon.icns" "${RESOURCES_DIR}/AppIcon.icns"
 cp "Resources/AppIcon.png" "${RESOURCES_DIR}/AppIcon.png"
 
-# 4. 生成 Info.plist (包含 Finder .md 文件类型关联与图标配置)
+# 4. 生成 Info.plist (包含 Finder .md 文件类型关联与 UTType 配置)
 echo "📝 生成 Info.plist 配置..."
 cat <<EOF > "${CONTENTS_DIR}/Info.plist"
 <?xml version="1.0" encoding="UTF-8"?>
@@ -38,9 +38,9 @@ cat <<EOF > "${CONTENTS_DIR}/Info.plist"
     <key>CFBundleIdentifier</key>
     <string>com.mdpreview.app</string>
     <key>CFBundleVersion</key>
-    <string>0.9.0</string>
+    <string>1.0.0</string>
     <key>CFBundleShortVersionString</key>
-    <string>0.9.0</string>
+    <string>1.0.0</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleSignature</key>
@@ -81,19 +81,51 @@ cat <<EOF > "${CONTENTS_DIR}/Info.plist"
             </array>
         </dict>
     </array>
+    <key>UTImportedTypeDeclarations</key>
+    <array>
+        <dict>
+            <key>UTTypeIdentifier</key>
+            <string>net.daringfireball.markdown</string>
+            <key>UTTypeDescription</key>
+            <string>Markdown Document</string>
+            <key>UTTypeConformsTo</key>
+            <array>
+                <string>public.plain-text</string>
+            </array>
+            <key>UTTypeTagSpecification</key>
+            <dict>
+                <key>public.filename-extension</key>
+                <array>
+                    <string>md</string>
+                    <string>markdown</string>
+                    <string>mdown</string>
+                    <string>mkdn</string>
+                </array>
+            </dict>
+        </dict>
+    </array>
 </dict>
 </plist>
 EOF
 
-# 5. 本地临时代码签名 (Ad-hoc Code Signing，防止 macOS 阻止启动)
-echo "🔏 进行本地签名..."
+# 5. 本地代码签名 (Ad-hoc Code Signing)
+echo "🔏 进行本地代码签名..."
 codesign --force --deep --sign - "${APP_BUNDLE}"
 
-# 6. 打包为 ZIP 压缩包方便发送
-echo "🗜️ 压缩为 MDPreview.zip ..."
-rm -f "${APP_NAME}.zip"
-zip -r -y -q "${APP_NAME}.zip" "${APP_BUNDLE}"
+# 6. 生成标准 DMG 安装包
+echo "💿 正在生成 MDPreview.dmg 安装包..."
+DMG_STAGING=$(mktemp -d)
+cp -R "${APP_BUNDLE}" "$DMG_STAGING/"
+ln -s /Applications "$DMG_STAGING/Applications"
+rm -f "${APP_NAME}.dmg"
+hdiutil create -volname "${APP_NAME}" -srcfolder "$DMG_STAGING" -ov -format UDZO "${APP_NAME}.dmg"
+rm -rf "$DMG_STAGING"
+
+# 7. 刷新 LaunchServices 注册
+if [ -f "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister" ]; then
+    /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "${APP_BUNDLE}" || true
+fi
 
 echo "✅ 打包完成！"
 echo "📂 生成的应用程序: $(pwd)/${APP_BUNDLE}"
-echo "📦 生成的分享压缩包: $(pwd)/${APP_NAME}.zip"
+echo "💿 生成的 DMG 安装包: $(pwd)/${APP_NAME}.dmg"

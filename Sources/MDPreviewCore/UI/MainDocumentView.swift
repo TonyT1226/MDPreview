@@ -1,42 +1,43 @@
 import SwiftUI
 import AppKit
 
-/// 主文档交互视图 (整合大纲侧边栏、阅读器、编辑器与悬浮状态条)
+/// 主文档交互视图 (整合 NavigationSplitView 大纲侧边栏、阅读器、编辑器与悬浮状态条，支持多窗口/多标签)
 public struct MainDocumentView: View {
     @Binding public var document: MarkdownDocument
+    public var fileURL: URL?
     @StateObject private var state = EditorState()
     @State private var parsedDoc: ParsedDocument = ParsedDocument()
     @State private var parseTask: Task<Void, Never>? = nil
 
-    public init(document: Binding<MarkdownDocument>) {
+    public init(document: Binding<MarkdownDocument>, fileURL: URL? = nil) {
         self._document = document
+        self.fileURL = fileURL
     }
 
-    /// 文档标题（优先取首个 H1，否则显示默认名称）
+    /// 文档标题（优先取已打开文件名，否则取首个 H1，否则显示默认名称）
     private var documentTitle: String {
+        if let name = fileURL?.lastPathComponent, !name.isEmpty {
+            return name
+        }
         if let firstHeading = parsedDoc.tocItems.first?.title, !firstHeading.isEmpty {
             return firstHeading
         }
         return "未命名.md"
     }
 
+    private var splitVisibility: Binding<NavigationSplitViewVisibility> {
+        Binding(
+            get: { state.showTOC ? .all : .detailOnly },
+            set: { state.showTOC = ($0 != .detailOnly) }
+        )
+    }
+
     public var body: some View {
-        HStack(spacing: 0) {
-            // 1. 左侧大纲侧边栏 (流体展开/折叠)
-            if state.showTOC {
-                TOCSidebarView(items: parsedDoc.tocItems, targetScrollId: $state.targetScrollId)
-                    .transition(
-                        .asymmetric(
-                            insertion: .move(edge: .leading).combined(with: .opacity),
-                            removal: .move(edge: .leading).combined(with: .opacity)
-                        )
-                    )
-
-                Divider()
-                    .opacity(0.3)
-                    .transition(.opacity)
-            }
-
+        NavigationSplitView(columnVisibility: splitVisibility) {
+            // 1. 左侧原生分栏大纲侧边栏
+            TOCSidebarView(items: parsedDoc.tocItems, targetScrollId: $state.targetScrollId)
+                .navigationSplitViewColumnWidth(min: 180, ideal: 220, max: 320)
+        } detail: {
             // 2. 主区域：根据模式展示
             ZStack(alignment: .bottomTrailing) {
                 mainContentView
@@ -45,38 +46,37 @@ public struct MainDocumentView: View {
                 // 悬浮状态胶囊 (macOS 27 风格，字数与行数)
                 FloatingStatusCapsule(stats: parsedDoc.stats)
             }
+            .navigationTitle(documentTitle)
+            .toolbar {
+                NativeUnifiedToolbar(state: state)
+            }
         }
-        .animation(.smooth(duration: 0.28), value: state.showTOC)
-        .toolbar {
-            LiquidGlassToolbar(
-                state: state,
-                documentTitle: documentTitle,
-                onExportPDF: handlePrint
-            )
-        }
+        .navigationSplitViewStyle(.balanced)
         .onAppear {
             updateParsedDoc(text: document.text)
         }
         .onChange(of: document.text) { _, newText in
             updateParsedDoc(text: newText)
         }
-        // 快捷键映射支持
-        .background(
-            Button("") {
-                withAnimation(.easeInOut(duration: 0.18)) {
-                    state.toggleViewMode()
+        .onDrop(of: [.fileURL], isTargeted: nil) { providers in
+            guard let provider = providers.first else { return false }
+            _ = provider.loadObject(ofClass: URL.self) { url, _ in
+                if let url = url {
+                    Task { @MainActor in
+                        NSDocumentController.shared.openDocument(withContentsOf: url, display: true) { _, _, _ in }
+                    }
                 }
             }
-            .keyboardShortcut("e", modifiers: .command)
-            .opacity(0)
-        )
+            return true
+        }
+        // 快捷键映射支持
         .background(
             Button("") {
                 withAnimation(.easeInOut(duration: 0.18)) {
                     state.viewMode = .reading
                 }
             }
-            .keyboardShortcut("1", modifiers: [.command, .option])
+            .keyboardShortcut("r", modifiers: .command)
             .opacity(0)
         )
         .background(
@@ -85,7 +85,7 @@ public struct MainDocumentView: View {
                     state.viewMode = .editing
                 }
             }
-            .keyboardShortcut("2", modifiers: [.command, .option])
+            .keyboardShortcut("e", modifiers: .command)
             .opacity(0)
         )
         .background(
@@ -94,7 +94,7 @@ public struct MainDocumentView: View {
                     state.viewMode = .split
                 }
             }
-            .keyboardShortcut("3", modifiers: [.command, .option])
+            .keyboardShortcut("d", modifiers: .command)
             .opacity(0)
         )
         .background(
@@ -168,3 +168,12 @@ public struct MainDocumentView: View {
         printOperation.run()
     }
 }
+
+#if DEBUG
+struct MainDocumentView_Previews: PreviewProvider {
+    static var previews: some View {
+        MainDocumentView(document: .constant(MarkdownDocument(text: "# 示例文档\n\n这是预览内容。\n\n## 第二节\n\n段落文字。")))
+            .frame(width: 900, height: 600)
+    }
+}
+#endif

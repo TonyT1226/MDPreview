@@ -7,6 +7,7 @@ Package.resolved
 # Build Artifacts & Applications
 *.app/
 *.zip
+*.dmg
 *.dSYM/
 
 # OS generated files

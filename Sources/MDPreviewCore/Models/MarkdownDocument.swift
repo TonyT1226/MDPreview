@@ -3,12 +3,23 @@ import UniformTypeIdentifiers
 
 public struct MarkdownDocument: FileDocument, @unchecked Sendable {
     public static var readableContentTypes: [UTType] {
-        [
-            UTType.plainText,
+        var types: [UTType] = [
             UTType(importedAs: "net.daringfireball.markdown"),
             UTType(importedAs: "public.markdown"),
-            UTType(importedAs: "public.text")
+            UTType.plainText,
+            UTType.text
         ]
+        if let mdExt = UTType(filenameExtension: "md") {
+            types.append(mdExt)
+        }
+        if let markdownExt = UTType(filenameExtension: "markdown") {
+            types.append(markdownExt)
+        }
+        return types
+    }
+
+    public static var writableContentTypes: [UTType] {
+        readableContentTypes
     }
 
     public var text: String
@@ -18,11 +29,18 @@ public struct MarkdownDocument: FileDocument, @unchecked Sendable {
     }
 
     public init(configuration: ReadConfiguration) throws {
-        guard let data = configuration.file.regularFileContents,
-              let string = String(data: data, encoding: .utf8) else {
+        guard let data = configuration.file.regularFileContents else {
             throw CocoaError(.fileReadCorruptFile)
         }
-        self.text = string
+        if let string = String(data: data, encoding: .utf8) {
+            self.text = string
+        } else if let string = String(data: data, encoding: .utf16) {
+            self.text = string
+        } else if let string = String(data: data, encoding: .isoLatin1) {
+            self.text = string
+        } else {
+            self.text = ""
+        }
     }
 
     public func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
