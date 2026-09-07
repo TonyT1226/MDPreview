@@ -4,9 +4,10 @@ import SwiftUI
 public struct NativeSyntaxHighlighter: Sendable {
     
     public static func highlight(code: String, language: String?) -> AttributedString {
+        let codeFont: Font = .system(size: 13, weight: .regular, design: .monospaced)
         var attributed = AttributedString(code)
-        attributed.font = .system(.body, design: .monospaced)
-        
+        attributed.font = codeFont
+
         let lang = (language ?? "").lowercased().trimmingCharacters(in: .whitespaces)
         if lang.isEmpty {
             attributed.foregroundColor = .primary
@@ -66,12 +67,12 @@ public struct NativeSyntaxHighlighter: Sendable {
                 types: types,
                 commentPrefixes: commentPrefixes
             )
-            lineAttr.font = .system(size: 13, weight: .regular, design: .monospaced)
+            lineAttr.font = codeFont
             result.append(lineAttr)
-            
+
             if i < lines.count - 1 {
                 var newline = AttributedString("\n")
-                newline.font = .system(size: 13, weight: .regular, design: .monospaced)
+                newline.font = codeFont
                 result.append(newline)
             }
         }
