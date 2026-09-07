@@ -15,11 +15,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_16.4.app || sudo xcode-select -s /Applications/Xcode.app
-
       - name: Swift version
-        run: swift --version
+        run: swift --version   # macos-15 runner 默认即完整 Xcode 16.x
 
       - name: Build core (SwiftPM)
         run: swift build
