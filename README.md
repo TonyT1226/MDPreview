@@ -131,15 +131,15 @@
 ## 📦 安装与编译构建 (Installation & Build)
 
 ### 方式一：使用 DMG 安装包 (Recommended)
-1. 从 [Releases](https://github.com/TonyT1226/md-reader/releases) 页面下载 **`MDPreview.dmg`**。
+1. 从 [Releases](https://github.com/TonyT1226/MDPreview/releases) 页面下载 **`MDPreview.dmg`**。
 2. 双击打开，将 **`MDPreview.app`** 拖入 **`Applications`** 文件夹。
 3. 双击运行，或在任意 `.md` 文件右键「打开方式 → MDPreview」。
 
 ### 方式二：从源码构建
 
 ```bash
-git clone https://github.com/TonyT1226/md-reader.git
-cd md-reader
+git clone https://github.com/TonyT1226/MDPreview.git
+cd MDPreview
 
 # 只跑解析核心 + 单测（需完整 Xcode 工具链）
 swift test
