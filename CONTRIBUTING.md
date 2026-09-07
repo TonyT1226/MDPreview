@@ -19,7 +19,7 @@
 | `Sources/App/` | 极薄的 App 外壳：`@main` 入口、`Info.plist`、`Assets.xcassets` |
 | `Tests/MDPreviewCoreTests/` | swift-testing 单测 |
 | `project.yml` | XcodeGen 配置；`MDPreview.xcodeproj` 由它生成 |
-| `Package.swift` / `Package.resolved` | 依赖定义与锁文件（`swift-markdown` pin 到具体 commit） |
+| `Package.swift` | 依赖定义（`swift-markdown` 用 `revision:` 精确锁定；`Package.resolved` 不入库） |
 
 ## 常用命令
 
@@ -50,7 +50,6 @@ xcodebuild -project MDPreview.xcodeproj -scheme MDPreview -configuration Debug \
 1. 修改 `Package.swift` 里的 `swiftMarkdownRevision`
 2. `swift package update`
 3. `swift test` 确认无回归
-4. 提交新的 `Package.resolved`
 
 ## 发布
 

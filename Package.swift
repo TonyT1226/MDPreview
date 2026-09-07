@@ -3,10 +3,10 @@
 
 import PackageDescription
 
-// apple/swift-markdown 上游不发布 semver tag，只有开发快照 tag。
-// 为保证可复现构建，这里 pin 到具体 commit，并将 Package.resolved 纳入版本控制。
-// 升级方式：改下面的 revision（或临时切回 branch: "main"）后执行 `swift package update`，
-// 确认无回归再提交新的 Package.resolved。
+// apple/swift-markdown 上游不发布 semver tag，只有开发快照。为保证可复现构建，
+// 这里 pin 到具体 commit（revision 即精确锁定，无需再提交 Package.resolved，
+// 后者在 Xcode 与命令行 SPM 之间会产生无意义的 originHash 抖动）。
+// 升级：改下面的 revision 后 `swift package update`，验证无回归即可。
 let swiftMarkdownRevision = "27b7fc1a19068bcea3d2072db0ce86360d1400ed"
 
 let package = Package(

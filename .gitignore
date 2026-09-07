@@ -2,7 +2,8 @@
 .build/
 .cache/
 .swiftpm/
-# Package.resolved 现在纳入版本控制（锁定 swift-markdown 版本，保证可复现构建）
+# swift-markdown 已在 Package.swift 用 revision 精确锁定，Package.resolved 不入库
+Package.resolved
 
 # Xcode
 .xcbuild/

@@ -84,7 +84,7 @@
 - **编辑器**：改用 TextKit 2 装配；编辑 / 输入法组字期间不再回灌文本，修复中文输入掉字、光标跳动、撤销栈丢失。
 - **解析正确性**：嵌套 / 多段落列表项、标题内联样式保留、`==高亮==` 正则化（不再误伤 `a == b`）、引用块内标题不进 TOC、块级图片渲染。
 - **交互**：任务列表勾选回写源文档；TOC 滚动联动高亮；按键防抖解析（大文档后台线程）。
-- **工程**：独立 `MDPreview.xcodeproj`（XcodeGen 生成）；`swift-markdown` 锁定到具体 commit 并提交 `Package.resolved`；swift-testing 单测；GitHub Actions CI；DMG 移出仓库改走 Releases。
+- **工程**：独立 `MDPreview.xcodeproj`（XcodeGen 生成）；`swift-markdown` 用 `revision:` 精确锁定；swift-testing 单测；GitHub Actions CI；DMG 移出仓库改走 Releases。
 
 ### 🚧 v1.2.0 — 阅读与编辑体验（规划中）
 
