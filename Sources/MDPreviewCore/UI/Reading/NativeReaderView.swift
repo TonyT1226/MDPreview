@@ -78,8 +78,12 @@ public struct NativeReaderView: View {
         let passed = offsets.filter { $0.value <= threshold }
         let current = passed.max(by: { $0.value < $1.value })?.key
             ?? offsets.min(by: { $0.value < $1.value })?.key
-        if current != activeHeadingId {
-            activeHeadingId = current
+        guard current != activeHeadingId else { return }
+        // onPreferenceChange 会在视图更新期间触发，延到下一轮 runloop 再改状态
+        DispatchQueue.main.async {
+            if current != activeHeadingId {
+                activeHeadingId = current
+            }
         }
     }
 }

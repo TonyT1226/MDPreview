@@ -1,26 +1,14 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-public struct MarkdownDocument: FileDocument, @unchecked Sendable {
-    public static var readableContentTypes: [UTType] {
-        var types: [UTType] = [
-            UTType(importedAs: "net.daringfireball.markdown"),
-            UTType(importedAs: "public.markdown"),
-            UTType.plainText,
-            UTType.text
-        ]
-        if let mdExt = UTType(filenameExtension: "md") {
-            types.append(mdExt)
-        }
-        if let markdownExt = UTType(filenameExtension: "markdown") {
-            types.append(markdownExt)
-        }
-        return types
-    }
+public extension UTType {
+    /// 与 App Info.plist 的 UTImportedTypeDeclarations 声明保持一致
+    static let markdown = UTType(importedAs: "net.daringfireball.markdown")
+}
 
-    public static var writableContentTypes: [UTType] {
-        readableContentTypes
-    }
+public struct MarkdownDocument: FileDocument, @unchecked Sendable {
+    public static let readableContentTypes: [UTType] = [.markdown, .plainText]
+    public static let writableContentTypes: [UTType] = [.markdown, .plainText]
 
     public var text: String
 

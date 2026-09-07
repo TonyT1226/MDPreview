@@ -9,6 +9,7 @@ public struct MainDocumentView: View {
     @StateObject private var state = EditorState()
     @State private var parsedDoc = ParsedDocument()
     @State private var parseTask: Task<Void, Never>?
+    @State private var columnVisibility: NavigationSplitViewVisibility = .all
 
     public init(document: Binding<MarkdownDocument>, fileURL: URL? = nil) {
         self._document = document
@@ -25,15 +26,8 @@ public struct MainDocumentView: View {
         fileURL?.deletingLastPathComponent()
     }
 
-    private var splitVisibility: Binding<NavigationSplitViewVisibility> {
-        Binding(
-            get: { state.showTOC ? .all : .detailOnly },
-            set: { state.showTOC = ($0 != .detailOnly) }
-        )
-    }
-
     public var body: some View {
-        NavigationSplitView(columnVisibility: splitVisibility) {
+        NavigationSplitView(columnVisibility: $columnVisibility) {
             TOCSidebarView(
                 items: parsedDoc.tocItems,
                 targetScrollId: $state.targetScrollId,
@@ -54,6 +48,15 @@ public struct MainDocumentView: View {
         .onAppear { scheduleParse(text: document.text, immediate: true) }
         .onChange(of: document.text) { _, newText in
             scheduleParse(text: newText, immediate: false)
+        }
+        // 侧边栏可见性与 EditorState 双向同步（放在 onChange 里改，避免在视图更新中发布状态）
+        .onChange(of: state.showTOC) { _, show in
+            let target: NavigationSplitViewVisibility = show ? .all : .detailOnly
+            if columnVisibility != target { columnVisibility = target }
+        }
+        .onChange(of: columnVisibility) { _, vis in
+            let show = (vis != .detailOnly)
+            if state.showTOC != show { state.showTOC = show }
         }
         .onDrop(of: [.fileURL], isTargeted: nil) { providers in
             guard let provider = providers.first else { return false }
