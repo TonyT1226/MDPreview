@@ -1,4 +1,4 @@
-# MDPreview (v1.0.0)
+# MDPreview (v1.1.0)
 
 <p align="center">
   <img src="Resources/AppIcon.png" alt="MDPreview Logo" width="128" height="128" style="border-radius: 24px; box-shadow: 0 8px 24px rgba(0,0,0,0.12);" />
@@ -10,8 +10,8 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-v1.0.0-blue.svg" alt="Version">
-  <img src="https://img.shields.io/badge/Swift-6.0%20%2F%205.10-orange.svg" alt="Swift">
+  <img src="https://img.shields.io/badge/Version-v1.1.0-blue.svg" alt="Version">
+  <img src="https://img.shields.io/badge/Swift-6.0-orange.svg" alt="Swift">
   <img src="https://img.shields.io/badge/Platform-macOS%2014.0%2B-lightgrey.svg" alt="macOS">
   <img src="https://img.shields.io/badge/Architecture-Apple%20Silicon%20%2F%20Intel-success.svg" alt="Architecture">
   <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License">
@@ -62,12 +62,29 @@
 - 搭配圆角浅底代码容器，阅读更舒适。
 
 ### 7. 🔍 悬浮状态胶囊 (Floating Glass Capsule)
-- 动态统计当前文档的字数与行数。
-- 悬浮于右下角，支持鼠标悬停增强、静止自动淡出，避免打扰阅读焦点。
+- 右下角常驻显示当前文档字数（中文按字、拉丁按词计）。
+- 鼠标悬停时展开显示行数；静止时自动淡出，不打扰阅读焦点。
 
-### 8. 📂 Finder 深度整合与拖拽支持
-- 支持文件拖拽：直接将本地 `.md` 文件拖入窗口即可开启新标签页。
-- 支持文件关联：原生支持 `.md`、`.markdown`、`.mdown`、`.mkdn`、`.txt` 等文档格式。
+### 8. 📑 目录大纲滚动联动
+- 阅读时正文滚动，侧边栏自动高亮当前所在章节。
+- 引用块 / 列表内部的 `#` 标题不会污染大纲层级。
+
+### 9. 📂 Finder 深度整合与拖拽支持
+- 支持文件拖拽：直接将本地 `.md` 文件拖入窗口即可打开。
+- 支持文件关联：原生支持 `.md`、`.markdown`、`.mdown`、`.mkdn` 等文档格式。
+
+---
+
+## 🚧 规划中 (Roadmap)
+
+以下功能尚未实现，欢迎 PR：
+
+- 编辑器行号标尺与 Markdown 语法高亮
+- 文档内查找 (`⌘F`) 与替换
+- 导出矢量 PDF / 打印 (`⌘P`)
+- 外部修改静默热重载（Finder 中改动自动刷新）
+- 偏好设置（字体、行距、主题、版心宽度）
+- Finder Quick Look 快速预览插件
 
 ---
 
@@ -77,13 +94,12 @@
 | :--- | :--- |
 | `⌘ R` | 切换至阅读模式 (Reader View) |
 | `⌘ E` | 切换至编辑模式 (Editor View) |
-| `⌘ D` | 切换至分屏模式 (Split View) |
+| `⇧ ⌘ E` | 切换至分屏模式 (Split View) |
+| `⌘ ⌥ S` | 展开 / 收起目录大纲侧边栏 |
 | `⌘ N` | 新建文档窗口 / Tab |
 | `⌘ O` | 打开本地 Markdown 文件 |
 | `⌘ S` | 保存当前文档 |
 | `⌘ ⇧ S` | 另存为新文件 |
-| `⌘ ⌥ S` | 展开 / 收起目录大纲侧边栏 |
-| `⌘ P` | 打印 / 导出 PDF |
 | `⌘ W` | 关闭当前窗口 / 标签页 |
 | `⌘ Q` | 退出应用程序 |
 
@@ -91,35 +107,40 @@
 
 ## 🛠️ 系统要求 (System Requirements)
 
-- **操作系统**：macOS 14.0 (Sonoma) 或更高版本（推荐 macOS 15+）
-- **硬件平台**：Apple Silicon (M1/M2/M3/M4 系列) 及 Intel 架构芯片
-- **编译依赖**：Xcode 15.0+ 或 Swift 5.10+ 工具链
+- **运行**：macOS 14.0 (Sonoma) 或更高版本（Liquid Glass 材质需 macOS 26+，低版本自动回退毛玻璃）
+- **硬件平台**：Apple Silicon 及 Intel
+- **开发**：完整版 Xcode 16+（Swift 6）与 [`xcodegen`](https://github.com/yonaskolb/XcodeGen)
 
 ---
 
 ## 📦 安装与编译构建 (Installation & Build)
 
 ### 方式一：使用 DMG 安装包 (Recommended)
-1. 从 Release 页面或项目根目录获取 **`MDPreview.dmg`**。
-2. 双击打开 `MDPreview.dmg`，将 **`MDPreview.app`** 拖入 **`Applications`** 文件夹。
-3. 双击即可直接运行，或在任意 `.md` 文件右键选择 MDPreview 打开。
+1. 从 [Releases](https://github.com/TonyT1226/md-reader/releases) 页面下载 **`MDPreview.dmg`**。
+2. 双击打开，将 **`MDPreview.app`** 拖入 **`Applications`** 文件夹。
+3. 双击运行，或在任意 `.md` 文件右键「打开方式 → MDPreview」。
 
-### 方式二：从源码编译运行
+### 方式二：从源码构建
 
 ```bash
-# 1. 克隆项目仓库
 git clone https://github.com/TonyT1226/md-reader.git
 cd md-reader
 
-# 2. 编译并运行
-swift run
+# 只跑解析核心 + 单测（需完整 Xcode 工具链）
+swift test
 
-# 3. 命令行打开指定文件
-swift run MDPreview SampleDocument.md
+# 生成并打开 App 工程
+brew install xcodegen
+xcodegen generate
+open MDPreview.xcodeproj      # 在 Xcode 里 Run / 预览 / 归档
 
-# 4. 构建 Release 优化二进制
-swift build -c release
+# 或命令行打包 DMG
+./package_app.sh
 ```
+
+> 详见 [CONTRIBUTING.md](CONTRIBUTING.md)。若遇到 “no such module 'Testing'”、
+> SwiftUI 预览无法加载、运行后不开窗，通常是 `xcode-select` 指向了 Command Line Tools，
+> 执行 `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer` 即可。
 
 ---
 

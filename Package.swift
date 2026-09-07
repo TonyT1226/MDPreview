@@ -3,23 +3,25 @@
 
 import PackageDescription
 
+// apple/swift-markdown 上游不发布 semver tag，只有开发快照 tag。
+// 为保证可复现构建，这里 pin 到具体 commit，并将 Package.resolved 纳入版本控制。
+// 升级方式：改下面的 revision（或临时切回 branch: "main"）后执行 `swift package update`，
+// 确认无回归再提交新的 Package.resolved。
+let swiftMarkdownRevision = "27b7fc1a19068bcea3d2072db0ce86360d1400ed"
+
 let package = Package(
     name: "MDPreview",
     platforms: [
         .macOS(.v14)
     ],
     products: [
-        .executable(
-            name: "MDPreview",
-            targets: ["MDPreview"]
-        ),
-        .executable(
-            name: "VerifyTool",
-            targets: ["VerifyTool"]
-        ),
+        .library(
+            name: "MDPreviewCore",
+            targets: ["MDPreviewCore"]
+        )
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-markdown.git", branch: "main")
+        .package(url: "https://github.com/apple/swift-markdown.git", revision: swiftMarkdownRevision)
     ],
     targets: [
         .target(
@@ -29,19 +31,12 @@ let package = Package(
             ],
             path: "Sources/MDPreviewCore"
         ),
-        .executableTarget(
-            name: "MDPreview",
+        .testTarget(
+            name: "MDPreviewCoreTests",
             dependencies: [
                 "MDPreviewCore"
             ],
-            path: "Sources/MDPreviewApp"
-        ),
-        .executableTarget(
-            name: "VerifyTool",
-            dependencies: [
-                "MDPreviewCore"
-            ],
-            path: "Sources/VerifyTool"
+            path: "Tests/MDPreviewCoreTests"
         )
     ]
 )

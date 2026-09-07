@@ -1,12 +1,21 @@
-# Xcode / Swift Package Manager
+# Swift Package Manager
 .build/
 .cache/
 .swiftpm/
-Package.resolved
+# Package.resolved 现在纳入版本控制（锁定 swift-markdown 版本，保证可复现构建）
+
+# Xcode
+.xcbuild/
+DerivedData/
+*.xcodeproj/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+*.xcworkspace/xcuserdata/
 
 # Build Artifacts & Applications
 *.app/
 *.zip
+*.dmg
 *.dSYM/
 
 # OS generated files

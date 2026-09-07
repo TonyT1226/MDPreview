@@ -1,131 +1,49 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
-echo "🚀 开始打包 MDPreview.app 与 MDPreview.dmg (v1.0.0)..."
+# 打包 MDPreview.app 与 MDPreview.dmg
+# 依赖：Xcode（完整版）、xcodegen
+#
+# 发布签名/公证（需要 Apple Developer 账号，本脚本默认走 ad-hoc 签名）：
+#   1. 在 project.yml 里把 DEVELOPMENT_TEAM 设为你的 Team ID，CODE_SIGN_STYLE 设为 Manual/Automatic
+#   2. 归档后执行：
+#        xcrun notarytool submit MDPreview.dmg --keychain-profile "AC_PASSWORD" --wait
+#        xcrun stapler staple MDPreview.dmg
 
-# 1. 编译 Release 优化版本
-echo "📦 正在编译 Release 二进制文件..."
-swift build -c release
-
-# 2. 准备 App Bundle 目录结构
 APP_NAME="MDPreview"
-APP_BUNDLE="${APP_NAME}.app"
-CONTENTS_DIR="${APP_BUNDLE}/Contents"
-MACOS_DIR="${CONTENTS_DIR}/MacOS"
-RESOURCES_DIR="${CONTENTS_DIR}/Resources"
+BUILD_DIR=".xcbuild"
+EXPORT_DIR="dist"
 
-rm -rf "${APP_BUNDLE}"
-mkdir -p "${MACOS_DIR}"
-mkdir -p "${RESOURCES_DIR}"
+echo "🧩 生成 Xcode 工程..."
+command -v xcodegen >/dev/null || { echo "❌ 需要 xcodegen：brew install xcodegen"; exit 1; }
+xcodegen generate
 
-# 3. 复制可执行文件与资源
-echo "📄 复制二进制文件与图标资源..."
-cp ".build/release/${APP_NAME}" "${MACOS_DIR}/${APP_NAME}"
-cp "Resources/AppIcon.icns" "${RESOURCES_DIR}/AppIcon.icns"
-cp "Resources/AppIcon.png" "${RESOURCES_DIR}/AppIcon.png"
+echo "📦 归档 Release 版本..."
+rm -rf "$BUILD_DIR" "$EXPORT_DIR"
+xcodebuild \
+  -project "${APP_NAME}.xcodeproj" \
+  -scheme "$APP_NAME" \
+  -configuration Release \
+  -derivedDataPath "$BUILD_DIR" \
+  -archivePath "$BUILD_DIR/${APP_NAME}.xcarchive" \
+  archive
 
-# 4. 生成 Info.plist (包含 Finder .md 文件类型关联与 UTType 配置)
-echo "📝 生成 Info.plist 配置..."
-cat <<EOF > "${CONTENTS_DIR}/Info.plist"
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>CFBundleName</key>
-    <string>MDPreview</string>
-    <key>CFBundleDisplayName</key>
-    <string>MDPreview</string>
-    <key>CFBundleIdentifier</key>
-    <string>com.mdpreview.app</string>
-    <key>CFBundleVersion</key>
-    <string>1.0.0</string>
-    <key>CFBundleShortVersionString</key>
-    <string>1.0.0</string>
-    <key>CFBundlePackageType</key>
-    <string>APPL</string>
-    <key>CFBundleSignature</key>
-    <string>????</string>
-    <key>CFBundleExecutable</key>
-    <string>MDPreview</string>
-    <key>CFBundleIconFile</key>
-    <string>AppIcon</string>
-    <key>LSMinimumSystemVersion</key>
-    <string>14.0</string>
-    <key>NSHighResolutionCapable</key>
-    <true/>
-    <key>NSSupportsAutomaticGraphicsSwitching</key>
-    <true/>
-    <key>CFBundleDocumentTypes</key>
-    <array>
-        <dict>
-            <key>CFBundleTypeName</key>
-            <string>Markdown Document</string>
-            <key>CFBundleTypeRole</key>
-            <string>Editor</string>
-            <key>LSHandlerRank</key>
-            <string>Owner</string>
-            <key>LSItemContentTypes</key>
-            <array>
-                <string>net.daringfireball.markdown</string>
-                <string>public.markdown</string>
-                <string>public.plain-text</string>
-                <string>public.text</string>
-            </array>
-            <key>CFBundleTypeExtensions</key>
-            <array>
-                <string>md</string>
-                <string>markdown</string>
-                <string>mdown</string>
-                <string>mkdn</string>
-                <string>txt</string>
-            </array>
-        </dict>
-    </array>
-    <key>UTImportedTypeDeclarations</key>
-    <array>
-        <dict>
-            <key>UTTypeIdentifier</key>
-            <string>net.daringfireball.markdown</string>
-            <key>UTTypeDescription</key>
-            <string>Markdown Document</string>
-            <key>UTTypeConformsTo</key>
-            <array>
-                <string>public.plain-text</string>
-            </array>
-            <key>UTTypeTagSpecification</key>
-            <dict>
-                <key>public.filename-extension</key>
-                <array>
-                    <string>md</string>
-                    <string>markdown</string>
-                    <string>mdown</string>
-                    <string>mkdn</string>
-                </array>
-            </dict>
-        </dict>
-    </array>
-</dict>
-</plist>
-EOF
+APP_PATH="$BUILD_DIR/${APP_NAME}.xcarchive/Products/Applications/${APP_NAME}.app"
+[ -d "$APP_PATH" ] || { echo "❌ 未找到归档产物 $APP_PATH"; exit 1; }
 
-# 5. 本地代码签名 (Ad-hoc Code Signing)
-echo "🔏 进行本地代码签名..."
-codesign --force --deep --sign - "${APP_BUNDLE}"
+mkdir -p "$EXPORT_DIR"
+cp -R "$APP_PATH" "$EXPORT_DIR/"
 
-# 6. 生成标准 DMG 安装包
-echo "💿 正在生成 MDPreview.dmg 安装包..."
+VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$EXPORT_DIR/${APP_NAME}.app/Contents/Info.plist")
+echo "🔖 版本：$VERSION"
+
+echo "💿 生成 DMG..."
 DMG_STAGING=$(mktemp -d)
-cp -R "${APP_BUNDLE}" "$DMG_STAGING/"
+cp -R "$EXPORT_DIR/${APP_NAME}.app" "$DMG_STAGING/"
 ln -s /Applications "$DMG_STAGING/Applications"
 rm -f "${APP_NAME}.dmg"
-hdiutil create -volname "${APP_NAME}" -srcfolder "$DMG_STAGING" -ov -format UDZO "${APP_NAME}.dmg"
+hdiutil create -volname "${APP_NAME} ${VERSION}" -srcfolder "$DMG_STAGING" -ov -format UDZO "${APP_NAME}.dmg"
 rm -rf "$DMG_STAGING"
 
-# 7. 刷新 LaunchServices 注册
-if [ -f "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister" ]; then
-    /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "${APP_BUNDLE}" || true
-fi
-
-echo "✅ 打包完成！"
-echo "📂 生成的应用程序: $(pwd)/${APP_BUNDLE}"
-echo "💿 生成的 DMG 安装包: $(pwd)/${APP_NAME}.dmg"
+echo "✅ 完成：$(pwd)/${APP_NAME}.dmg"
+echo "   （DMG 不进 git，作为 GitHub Release 附件分发）"

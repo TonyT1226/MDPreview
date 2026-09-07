@@ -9,66 +9,51 @@ public enum MarkdownTableAlignment: Sendable, Hashable {
     case none
 }
 
-/// 任务列表项
-public struct MarkdownTaskItem: Identifiable, Sendable, Hashable {
+/// 列表项（可持有任意子块：段落、嵌套列表、代码块……）
+public struct MarkdownListItem: Identifiable, Sendable, Hashable {
     public let id: String
-    public var isChecked: Bool
-    public var attributedText: AttributedString
+    /// 任务列表复选框状态；非任务项为 nil
+    public var checkbox: Bool?
+    /// 复选框在源文档中的行号（0 基），用于交互回写
+    public var sourceLine: Int?
+    public var blocks: [MarkdownBlock]
 
-    public init(id: String = UUID().uuidString, isChecked: Bool, attributedText: AttributedString) {
+    public init(id: String, checkbox: Bool? = nil, sourceLine: Int? = nil, blocks: [MarkdownBlock]) {
         self.id = id
-        self.isChecked = isChecked
-        self.attributedText = attributedText
-    }
-}
-
-/// 有序列表项
-public struct MarkdownOrderedListItem: Identifiable, Sendable, Hashable {
-    public var id: String { "\(number)-\(text.description.hashValue)" }
-    public let number: Int
-    public let text: AttributedString
-
-    public init(number: Int, text: AttributedString) {
-        self.number = number
-        self.text = text
+        self.checkbox = checkbox
+        self.sourceLine = sourceLine
+        self.blocks = blocks
     }
 }
 
 /// 纯原生渲染树的块级元素定义
 public enum MarkdownBlock: Identifiable, Sendable, Hashable {
     case heading(id: String, level: Int, text: String, attributed: AttributedString)
-    case paragraph(attributed: AttributedString)
+    case paragraph(id: String, attributed: AttributedString)
     case codeBlock(id: String, language: String?, code: String, highlighted: AttributedString)
-    case blockquote(blocks: [MarkdownBlock])
-    case table(headers: [AttributedString], alignments: [MarkdownTableAlignment], rows: [[AttributedString]])
-    case unorderedList(items: [AttributedString])
-    case orderedList(items: [MarkdownOrderedListItem])
-    case taskList(items: [MarkdownTaskItem])
-    case thematicBreak
-    case html(raw: String)
+    case blockquote(id: String, blocks: [MarkdownBlock])
+    case table(id: String, headers: [AttributedString], alignments: [MarkdownTableAlignment], rows: [[AttributedString]])
+    case unorderedList(id: String, items: [MarkdownListItem])
+    case orderedList(id: String, start: Int, items: [MarkdownListItem])
+    case taskList(id: String, items: [MarkdownListItem])
+    case thematicBreak(id: String)
+    case image(id: String, source: String?, alt: String)
+    case html(id: String, raw: String)
 
     public var id: String {
         switch self {
-        case .heading(let id, _, _, _):
-            return "heading-\(id)"
-        case .paragraph(let attributed):
-            return "p-\(attributed.characters.count)-\(attributed.description.hashValue)"
-        case .codeBlock(let id, _, _, _):
-            return "code-\(id)"
-        case .blockquote(let blocks):
-            return "quote-\(blocks.count)-\(blocks.first?.id ?? "")"
-        case .table(let headers, _, _):
-            return "table-\(headers.count)-\(headers.first?.description.hashValue ?? 0)"
-        case .unorderedList(let items):
-            return "ul-\(items.count)-\(items.first?.description.hashValue ?? 0)"
-        case .orderedList(let items):
-            return "ol-\(items.count)-\(items.first?.id ?? "")"
-        case .taskList(let items):
-            return "tasks-\(items.count)-\(items.first?.id ?? "")"
-        case .thematicBreak:
-            return "hr-\(UUID().uuidString)"
-        case .html(let raw):
-            return "html-\(raw.hashValue)"
+        case .heading(let id, _, _, _),
+             .paragraph(let id, _),
+             .codeBlock(let id, _, _, _),
+             .blockquote(let id, _),
+             .table(let id, _, _, _),
+             .unorderedList(let id, _),
+             .orderedList(let id, _, _),
+             .taskList(let id, _),
+             .thematicBreak(let id),
+             .image(let id, _, _),
+             .html(let id, _):
+            return id
         }
     }
 }

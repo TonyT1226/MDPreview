@@ -1,0 +1,45 @@
+# XcodeGen 配置 —— 生成 MDPreview.xcodeproj
+# 再生成：brew install xcodegen && xcodegen generate
+name: MDPreview
+options:
+  bundleIdPrefix: com.mdpreview
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+  minimumXcodeGenVersion: "2.38.0"
+
+settings:
+  base:
+    MARKETING_VERSION: "1.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_VERSION: "6.0"
+    DEVELOPMENT_TEAM: ""
+    CODE_SIGN_STYLE: Automatic
+    ENABLE_HARDENED_RUNTIME: YES
+
+packages:
+  MDPreviewCore:
+    path: .
+
+targets:
+  MDPreview:
+    type: application
+    platform: macOS
+    sources:
+      - path: Sources/App
+    dependencies:
+      - package: MDPreviewCore
+        product: MDPreviewCore
+    settings:
+      base:
+        PRODUCT_NAME: MDPreview
+        PRODUCT_BUNDLE_IDENTIFIER: com.mdpreview.app
+        INFOPLIST_FILE: Sources/App/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        COMBINE_HIDPI_IMAGES: YES
+        ENABLE_PREVIEWS: YES
+        SWIFT_EMIT_LOC_STRINGS: YES
+    scheme:
+      testTargets:
+        - package: MDPreviewCore/MDPreviewCoreTests
+      gatherCoverageData: false

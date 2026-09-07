@@ -21,17 +21,38 @@ public struct DocumentStats: Sendable, Hashable {
     public var characterCount: Int = 0
     public var wordCount: Int = 0
     public var lineCount: Int = 0
-    public var readingTimeMinutes: Int = 1
 
     public init(text: String = "") {
         self.characterCount = text.count
         self.lineCount = text.isEmpty ? 0 : text.components(separatedBy: .newlines).count
-        
-        let words = text.split { $0.isWhitespace || $0.isPunctuation }
-        self.wordCount = words.count
-        
-        // 平均按每分钟阅读 300 字估算
-        self.readingTimeMinutes = max(1, Int(ceil(Double(max(words.count, text.count / 2)) / 300.0)))
+
+        // CJK 字符按「字」计；剩余（拉丁等）文本按「词」计；两者相加
+        var cjkCount = 0
+        var latinScalars = String.UnicodeScalarView()
+        for scalar in text.unicodeScalars {
+            if Self.isCJK(scalar) {
+                cjkCount += 1
+            } else {
+                latinScalars.append(scalar)
+            }
+        }
+        let latinWords = String(latinScalars)
+            .split { $0.isWhitespace || ($0.isPunctuation && !$0.isLetter) }
+            .count
+        self.wordCount = cjkCount + latinWords
+    }
+
+    private static func isCJK(_ s: Unicode.Scalar) -> Bool {
+        switch s.value {
+        case 0x4E00...0x9FFF,   // CJK 统一表意文字
+             0x3400...0x4DBF,   // 扩展 A
+             0x3040...0x30FF,   // 平假名 / 片假名
+             0xAC00...0xD7AF,   // 韩文音节
+             0xF900...0xFAFF:   // 兼容表意文字
+            return true
+        default:
+            return false
+        }
     }
 }
 
@@ -42,6 +63,8 @@ public final class EditorState: ObservableObject {
     @Published public var searchText: String = ""
     @Published public var isSearchPresented: Bool = false
     @Published public var targetScrollId: String? = nil
+    /// 正文滚动时当前视口顶部最近的标题 id（用于 TOC 联动高亮）
+    @Published public var activeHeadingId: String? = nil
     @Published public var fontSizeDelta: Double = 0.0
 
     public init(viewMode: ViewMode = .reading, showTOC: Bool = true) {
@@ -50,13 +73,27 @@ public final class EditorState: ObservableObject {
     }
 
     public func toggleViewMode() {
-        switch viewMode {
-        case .reading:
-            viewMode = .editing
-        case .editing:
-            viewMode = .reading
-        case .split:
-            viewMode = .reading
-        }
+        viewMode = (viewMode == .reading) ? .editing : .reading
+    }
+
+    public func setViewMode(_ mode: ViewMode) {
+        withAnimation(.easeInOut(duration: 0.18)) { viewMode = mode }
+    }
+
+    public func toggleTOC() {
+        withAnimation(.smooth(duration: 0.28)) { showTOC.toggle() }
+    }
+}
+
+// MARK: - FocusedValue 桥接（供 App 场景的菜单命令触达当前窗口的状态）
+
+public struct EditorStateFocusedValueKey: FocusedValueKey {
+    public typealias Value = EditorState
+}
+
+public extension FocusedValues {
+    var editorState: EditorState? {
+        get { self[EditorStateFocusedValueKey.self] }
+        set { self[EditorStateFocusedValueKey.self] = newValue }
     }
 }
