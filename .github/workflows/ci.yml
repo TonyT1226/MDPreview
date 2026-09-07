@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main, v1.1]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Swift version
+        run: swift --version   # macos-15 runner 默认即完整 Xcode 16.x
+
+      - name: Build core (SwiftPM)
+        run: swift build
+
+      - name: Run tests (SwiftPM)
+        run: swift test
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Build macOS app
+        run: |
+          xcodebuild \
+            -project MDPreview.xcodeproj \
+            -scheme MDPreview \
+            -configuration Debug \
+            -derivedDataPath .xcbuild \
+            CODE_SIGNING_ALLOWED=NO \
+            build

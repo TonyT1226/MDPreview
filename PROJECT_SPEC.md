@@ -1,7 +1,7 @@
 # MDPreview — 纯原生 Markdown 极简阅读/编辑器架构规范 (macOS Native & Liquid Glass)
 
 > **定位**：100% 采用 Apple 原生技术栈构建的 macOS 极简 Markdown 文档阅读器与编辑器。
-> 摒弃任何 Web 容器（无 WebKit / HTML / JS 开销），基于 `swift-markdown`、`TextKit 2` 与 `SwiftUI` 打造，全面拥抱 **Liquid Glass (macOS 27+ / Visionary HIG)** 设计语言。
+> 摒弃任何 Web 容器（无 WebKit / HTML / JS 开销），基于 `swift-markdown`、`TextKit 2` 与 `SwiftUI` 打造，全面拥抱 **Liquid Glass (macOS 26+ / Visionary HIG)** 设计语言。
 
 ---
 
@@ -10,7 +10,7 @@
 * **100% 纯原生渲染 (Zero WebKit Overhead)**：
   * 完全舍弃 Web 视图，不加载庞大的 Web 渲染引擎进程。
   * 纯原生绘制：冷启动 `< 30ms`，基础内存占用 `< 15MB`，滚动和选区具备 120Hz ProMotion 丝滑帧率。
-* **macOS 27+ 前瞻设计规范 (Liquid Glass & Modern HIG)**：
+* **macOS 26+ 前瞻设计规范 (Liquid Glass & Modern HIG)**：
   * **流体材质与液态玻璃 (Liquid Glass)**：统一工具栏、悬浮指示器与控制组采用 `.glassEffect()` 与 `GlassEffectContainer`，具备光影互动反射与物理弹簧动效。
   * **自适应向后兼容**：高版本激活 Liquid Glass 流体交互，同时向下兼容 `.ultraThinMaterial` / `NSVisualEffectView`。
 * **Finder 亲和性与文档中心化 (Document-Centric)**：
@@ -180,13 +180,13 @@ MDPreview/
 ```swift
 import SwiftUI
 
-/// 统一适配 macOS 27+ Liquid Glass 及旧版本 Material 材质的视图修饰器
+/// 统一适配 macOS 26+ Liquid Glass 及旧版本 Material 材质的视图修饰器
 struct AdaptiveGlassModifier: ViewModifier {
     var cornerRadius: CGFloat = 12
     var isInteractive: Bool = false
 
     func body(content: Content) -> some View {
-        if #available(macOS 27, iOS 26, *) {
+        if #available(macOS 26, *) {
             if isInteractive {
                 content
                     .glassEffect(.regular.interactive(), in: .rect(cornerRadius: cornerRadius))
@@ -228,3 +228,15 @@ extension View {
    - `NSTextView` 封装与行号支持。
    - `⌘E` 丝滑切换动画与 Liquid Glass 胶囊工具栏。
    - 原生 PDF 导出与外部修改热重载。
+
+---
+
+## 8. v1.1 实际落地范围 (Shipped)
+
+- **解析正确性**：嵌套列表 / 多段落列表项、标题内联样式保留、`==高亮==` 正则化（不再误伤 `a == b`）、引用块内标题不进 TOC、块级图片渲染（本地 + 远程）。
+- **交互**：任务列表勾选回写源文档；TOC 滚动联动高亮；编辑器 TextKit 2 装配 + 输入法 / 撤销栈保护；按键防抖解析；`.commands` 菜单快捷键（分屏改 `⇧⌘E`）。
+- **工程**：新增 `MDPreview.xcodeproj`（XcodeGen 生成的独立 App 目标，含 `Info.plist`）、`swift-markdown` pin 到具体 commit、`Package.resolved` 纳入版控、swift-testing 单测、GitHub Actions CI；DMG 移出仓库改走 Releases。
+
+**未做（见 README Roadmap）**：阅读区改只读 NSTextView（跨段落连续选择 + 阅读态查找）、编辑器行号 / 语法高亮、PDF 导出、热重载、偏好设置、Quick Look 扩展。
+
+> 注：v1.1 的阅读区仍是 SwiftUI 逐块 `Text`，多个 `Text` 之间无法连续框选 —— 这一限制留待 v1.2 用 TextKit 2 文本视图统一解决。

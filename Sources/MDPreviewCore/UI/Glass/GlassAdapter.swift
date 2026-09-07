@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// 统一适配 macOS 27+ Liquid Glass 及 macOS 14/15/26 Material 材质的修饰器
+/// 统一适配 macOS 26+ Liquid Glass 及 macOS 14/15 Material 材质的修饰器
 public struct AdaptiveGlassModifier: ViewModifier {
     public var cornerRadius: CGFloat
     public var isInteractive: Bool
@@ -14,7 +14,7 @@ public struct AdaptiveGlassModifier: ViewModifier {
 
     public func body(content: Content) -> some View {
         #if compiler(>=6.0)
-        if #available(macOS 27, iOS 26, *) {
+        if #available(macOS 26, *) {
             // Liquid Glass 规范：优先使用系统原生 glassEffect 材质
             if let tint = tint {
                 if isInteractive {

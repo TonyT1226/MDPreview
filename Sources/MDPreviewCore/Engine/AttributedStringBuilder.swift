@@ -1,16 +1,21 @@
 import SwiftUI
 import Markdown
 
-/// 将 swift-markdown 的行内 AST 节点递归转换为原生 AttributedString (支持 GFM 与 ==高亮== 句法)
+/// 将 swift-markdown 的行内 AST 节点递归转换为原生 AttributedString
+/// （支持 GFM 与 `==高亮==` 句法；可选注入基础字体，行内 code / 强调各自覆盖）
 public struct AttributedStringBuilder: Sendable {
 
-    public static func build(from markup: any Markup) -> AttributedString {
+    public static func build(from markup: any Markup, baseFont: Font? = nil) -> AttributedString {
         var result = AttributedString()
-
         for child in markup.children {
             result.append(buildSingle(from: child))
         }
-
+        if let baseFont {
+            var container = AttributeContainer()
+            container.font = baseFont
+            // mergePolicy: keepCurrent —— 已有 run 属性（如行内代码字体）优先保留
+            result.mergeAttributes(container, mergePolicy: .keepCurrent)
+        }
         return result
     }
 
@@ -87,31 +92,27 @@ public struct AttributedStringBuilder: Sendable {
         }
     }
 
-    /// 解析 `==文本==` 高亮句法
+    /// 解析 `==文本==` 高亮句法（正则逐段匹配，正文中的 `a == b` 不受影响）
     public static func parseHighlightSyntax(in string: String) -> AttributedString {
-        guard string.contains("==") else {
-            return AttributedString(string)
-        }
+        guard string.contains("==") else { return AttributedString(string) }
 
+        let pattern = /==([^=\n]+)==/
         var result = AttributedString()
-        let components = string.components(separatedBy: "==")
-        
-        // 奇数个组件意味着有成对的 ==
-        for (index, component) in components.enumerated() {
-            if component.isEmpty { continue }
-            
-            if index % 2 == 1 && index < components.count - (components.count % 2 == 0 ? 1 : 0) {
-                // 位于 == 内部的内容 -> 施加高亮背景
-                var highlighted = AttributedString(component)
-                highlighted.backgroundColor = Color(nsColor: .systemYellow).opacity(0.38)
-                highlighted.foregroundColor = .primary
-                result.append(highlighted)
-            } else {
-                // 普通文本
-                result.append(AttributedString(component))
-            }
-        }
+        var cursor = string.startIndex
 
+        for match in string.matches(of: pattern) {
+            if match.range.lowerBound > cursor {
+                result.append(AttributedString(String(string[cursor..<match.range.lowerBound])))
+            }
+            var highlighted = AttributedString(String(match.1))
+            highlighted.backgroundColor = Color(nsColor: .systemYellow).opacity(0.38)
+            highlighted.foregroundColor = .primary
+            result.append(highlighted)
+            cursor = match.range.upperBound
+        }
+        if cursor < string.endIndex {
+            result.append(AttributedString(String(string[cursor...])))
+        }
         return result
     }
 }

@@ -4,10 +4,12 @@ import SwiftUI
 public struct TOCSidebarView: View {
     public let items: [TOCItem]
     @Binding public var targetScrollId: String?
+    public var activeId: String?
 
-    public init(items: [TOCItem], targetScrollId: Binding<String?>) {
+    public init(items: [TOCItem], targetScrollId: Binding<String?>, activeId: String? = nil) {
         self.items = items
         self._targetScrollId = targetScrollId
+        self.activeId = activeId
     }
 
     public var body: some View {
@@ -45,7 +47,7 @@ public struct TOCSidebarView: View {
                 ScrollView(.vertical, showsIndicators: true) {
                     LazyVStack(alignment: .leading, spacing: 3) {
                         ForEach(items) { item in
-                            TOCItemRow(item: item, targetScrollId: $targetScrollId)
+                            TOCItemRow(item: item, targetScrollId: $targetScrollId, activeId: activeId)
                         }
                     }
                     .padding(.horizontal, 8)
@@ -66,11 +68,12 @@ public struct TOCSidebarView: View {
 struct TOCItemRow: View {
     let item: TOCItem
     @Binding var targetScrollId: String?
+    var activeId: String?
     @State private var isExpanded: Bool = true
     @State private var isHovered: Bool = false
 
     var isSelected: Bool {
-        targetScrollId == item.id
+        activeId == item.id || (activeId == nil && targetScrollId == item.id)
     }
 
     var body: some View {
@@ -135,7 +138,7 @@ struct TOCItemRow: View {
             if isExpanded && !item.children.isEmpty {
                 VStack(alignment: .leading, spacing: 2) {
                     ForEach(item.children) { child in
-                        TOCItemRow(item: child, targetScrollId: $targetScrollId)
+                        TOCItemRow(item: child, targetScrollId: $targetScrollId, activeId: activeId)
                     }
                 }
                 .transition(.opacity.combined(with: .move(edge: .top)))
