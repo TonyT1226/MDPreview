@@ -11,7 +11,7 @@ public struct FloatingStatusCapsule: View {
 
     public var body: some View {
         HStack(spacing: 6) {
-            Text("\(stats.wordCount) 字")
+            Text(L.wordCount(stats.wordCount))
                 .font(.system(size: 11, weight: .medium))
                 .foregroundColor(.secondary)
 
@@ -19,7 +19,7 @@ public struct FloatingStatusCapsule: View {
                 Text("·")
                     .font(.system(size: 10))
                     .foregroundColor(.secondary.opacity(0.4))
-                Text("\(stats.lineCount) 行")
+                Text(L.lineCount(stats.lineCount))
                     .font(.system(size: 11, weight: .medium))
                     .foregroundColor(.secondary)
                     .transition(.opacity.combined(with: .move(edge: .trailing)))
@@ -32,7 +32,7 @@ public struct FloatingStatusCapsule: View {
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.15)) { isHovered = hovering }
         }
-        .help("\(stats.lineCount) 行")
+        .help(L.lineCount(stats.lineCount))
         .padding(.trailing, 16)
         .padding(.bottom, 12)
     }

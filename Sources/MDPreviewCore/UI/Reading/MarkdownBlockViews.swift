@@ -3,7 +3,7 @@ import AppKit
 
 // MARK: - 渲染上下文（图片 baseURL、任务回写回调，经 Environment 下传）
 
-public struct MarkdownRenderContext: Sendable {
+public struct MarkdownRenderContext: Sendable, Equatable {
     public var baseURL: URL?
     public var onToggleTask: @Sendable (_ sourceLine: Int, _ newChecked: Bool) -> Void
 
@@ -11,6 +11,12 @@ public struct MarkdownRenderContext: Sendable {
                 onToggleTask: @escaping @Sendable (Int, Bool) -> Void = { _, _ in }) {
         self.baseURL = baseURL
         self.onToggleTask = onToggleTask
+    }
+
+    // 闭包不参与相等性 —— 只看 baseURL。让 SwiftUI 能跳过等值的环境写入，
+    // 避免每次 body 重建 context 就让整棵块视图树失效（并触发 HeadingOffsetsKey 抖动）。
+    public static func == (lhs: MarkdownRenderContext, rhs: MarkdownRenderContext) -> Bool {
+        lhs.baseURL == rhs.baseURL
     }
 }
 
@@ -64,7 +70,9 @@ public struct HeadingBlockView: View {
             GeometryReader { geo in
                 Color.clear.preference(
                     key: HeadingOffsetsKey.self,
-                    value: [id: geo.frame(in: .named("reader")).minY]
+                    // 量化到 2pt —— 亚像素抖动不再算「值变了」，压掉
+                    // "preference tried to update multiple times per frame"
+                    value: [id: (geo.frame(in: .named("reader")).minY / 2).rounded() * 2]
                 )
             }
         )
@@ -139,7 +147,7 @@ public struct MarkdownImageView: View {
                     .scaledToFit()
                     .frame(maxWidth: .infinity, alignment: .leading)
             } else {
-                placeholder("无法加载图片")
+                placeholder(L.imageCannotLoad)
             }
         } else if let url = resolvedURL {
             AsyncImage(url: url) { phase in
@@ -147,22 +155,22 @@ public struct MarkdownImageView: View {
                 case .success(let image):
                     image.resizable().scaledToFit().frame(maxWidth: .infinity, alignment: .leading)
                 case .failure:
-                    placeholder("图片加载失败")
+                    placeholder(L.imageLoadFailed)
                 case .empty:
                     ProgressView().frame(maxWidth: .infinity, minHeight: 60)
                 @unknown default:
-                    placeholder("图片")
+                    placeholder(L.imageGenericAlt)
                 }
             }
         } else {
-            placeholder("图片路径无效")
+            placeholder(L.imageInvalidPath)
         }
     }
 
     private func placeholder(_ message: String) -> some View {
         HStack(spacing: 6) {
             Image(systemName: "photo")
-            Text("\(message)\(alt.isEmpty ? "" : "：\(alt)")").font(.system(size: 12))
+            Text(L.imagePlaceholder(message, alt: alt)).font(.system(size: 12))
         }
         .foregroundColor(.secondary)
         .padding(10)
@@ -199,7 +207,7 @@ public struct CodeBlockView: View {
                     HStack(spacing: 4) {
                         Image(systemName: isCopied ? "checkmark" : "doc.on.doc")
                             .font(.system(size: 10, weight: .medium))
-                        Text(isCopied ? "已复制" : "复制").font(.system(size: 11, weight: .medium))
+                        Text(isCopied ? L.copied : L.copy).font(.system(size: 11, weight: .medium))
                     }
                     .foregroundColor(isCopied ? .green : .secondary)
                     .padding(.horizontal, 6)
