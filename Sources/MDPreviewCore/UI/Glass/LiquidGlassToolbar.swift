@@ -14,13 +14,13 @@ public struct NativeUnifiedToolbar: ToolbarContent {
         ToolbarItem(placement: .principal) {
             Picker("", selection: $state.viewMode) {
                 ForEach(ViewMode.allCases) { mode in
-                    Label(mode.rawValue, systemImage: mode.icon)
+                    Label(mode.title, systemImage: mode.icon)
                         .tag(mode)
                 }
             }
             .pickerStyle(.segmented)
             .frame(width: 140)
-            .help("切换视图模式")
+            .help(L.switchViewModeHelp)
             .animation(.easeInOut(duration: 0.18), value: state.viewMode)
         }
     }

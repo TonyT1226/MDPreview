@@ -1,242 +1,261 @@
-# MDPreview — 纯原生 Markdown 极简阅读/编辑器架构规范 (macOS Native & Liquid Glass)
+# MDPreview 架构规范 (PROJECT_SPEC)
 
-> **定位**：100% 采用 Apple 原生技术栈构建的 macOS 极简 Markdown 文档阅读器与编辑器。
-> 摒弃任何 Web 容器（无 WebKit / HTML / JS 开销），基于 `swift-markdown`、`TextKit 2` 与 `SwiftUI` 打造，全面拥抱 **Liquid Glass (macOS 26+ / Visionary HIG)** 设计语言。
+> **定位**：一款 100% 原生的 macOS Markdown 阅读 / 轻量编辑器。
+> 不嵌 WebView、不跑 JS 引擎，`.md` 文本经 [`apple/swift-markdown`](https://github.com/apple/swift-markdown)
+> 解析成 AST 后直接生成 SwiftUI 原生视图；编辑器用 TextKit 2 (`NSTextView`)。
+>
+> 当前版本 **v1.2.0** · 运行需 **macOS 14+** · 构建需 **Xcode 16+** · MIT
 
----
-
-## 1. 核心设计哲学 (Design Philosophy)
-
-* **100% 纯原生渲染 (Zero WebKit Overhead)**：
-  * 完全舍弃 Web 视图，不加载庞大的 Web 渲染引擎进程。
-  * 纯原生绘制：冷启动 `< 30ms`，基础内存占用 `< 15MB`，滚动和选区具备 120Hz ProMotion 丝滑帧率。
-* **macOS 26+ 前瞻设计规范 (Liquid Glass & Modern HIG)**：
-  * **流体材质与液态玻璃 (Liquid Glass)**：统一工具栏、悬浮指示器与控制组采用 `.glassEffect()` 与 `GlassEffectContainer`，具备光影互动反射与物理弹簧动效。
-  * **自适应向后兼容**：高版本激活 Liquid Glass 流体交互，同时向下兼容 `.ultraThinMaterial` / `NSVisualEffectView`。
-* **Finder 亲和性与文档中心化 (Document-Centric)**：
-  * 依托 `DocumentGroup` 和 `FileDocument`，完美继承 macOS 原生多窗口、多标签（Tabs）、代理图标（Proxy Icon）拖拽、版本快照（Versions）及快捷保存机制。
+本文件描述**当前实际实现**与**下两个版本的路线图**。已知未落地的能力集中在
+[§8 已知限制](#8-已知限制known-gaps) 和 [§9 路线图](#9-路线图roadmap)，不要把路线图当成现状。
 
 ---
 
-## 2. 纯原生技术栈选型 (Pure Native Tech Stack)
+## 1. 设计原则
 
-| 层次 | 核心技术 | 说明与选型理由 |
-| :--- | :--- | :--- |
-| **语言与并发** | **Swift 6+** | 启用严格并发安全检查（Strict Concurrency Checking, `Sendable`, Swift Actors） |
-| **应用与窗口体系** | **SwiftUI + AppKit** | `DocumentGroup` + `NavigationSplitView`，窗口级别无边界融合 |
-| **UI 材质与动效** | **Liquid Glass API** | `GlassEffectContainer` + `.glassEffect()`，结合 SwiftUI 物理弹性动画 |
-| **Markdown AST 解析** | **`apple/swift-markdown`** | 苹果官方基于 cmark-gfm 开发的 Swift 抽象语法树（AST）引擎，高效、内存安全 |
-| **排版与渲染 (阅读态)** | **SwiftUI Native Tree + CoreText** | 针对 AST 节点生成纯原生 SwiftUI 组件树（支持原生选择、右键菜单、平滑缩放） |
-| **编辑核心 (编辑态)** | **TextKit 2 (`NSTextView`)** | 基于 `NSTextLayoutManager` 与 `NSTextContentStorage`，支持行号、语法高亮与丝滑输入 |
-| **文件与系统监听** | **`DispatchSourceFileSystemObject`** | 零依赖监听 Finder 中文件的外部变更，实现静默热重载 |
-| **系统预览扩展** | **`QuickLookThumbnailing` / `QuickLook`** | 原生 Quick Look 插件，Finder 空格键毫秒级唤起原生渲染 |
+| 原则 | 含义 | 现状 |
+| :-- | :-- | :-- |
+| **零 WebKit** | 不加载 Web 渲染进程；冷启动快、内存低、滚动跟手 | ✅ 全链路原生 |
+| **文档中心** | 依托 `DocumentGroup` + `FileDocument`，白拿多窗口 / 多标签 / 代理图标 / 版本快照 / 自动保存 | ✅ |
+| **Finder 亲和** | `.md` 文件关联、拖入打开、空格键预览 | ✅ 关联 + 拖入；⚠️ Quick Look 扩展未做 |
+| **渐进材质** | macOS 26+ 用 Liquid Glass (`.glassEffect`)，14/15 回退 `.ultraThinMaterial` | ✅ 有统一抽象，覆盖面还小 |
+| **解析与 UI 解耦** | 解析核心是独立 SPM 库，可单测、可给扩展复用 | ✅ `MDPreviewCore` |
+
+**非目标**（当前阶段明确不做）：所见即所得编辑、协同、插件系统、iOS / iPad 版、云同步。
 
 ---
 
-## 3. UI/UX 与视觉设计规范 (Liquid Glass HIG)
+## 2. 技术栈
 
-### 3.1 窗口与布局架构
+| 层 | 选型 | 说明 |
+| :-- | :-- | :-- |
+| 语言 | **Swift 6**（`SWIFT_VERSION = 6.0`，严格并发） | 模型层普遍 `Sendable` |
+| App / 窗口 | **SwiftUI `DocumentGroup` + `NavigationSplitView`** | 菜单命令经 `FocusedValue` 桥接到当前窗口 |
+| 阅读态渲染 | **SwiftUI 视图树**（`LazyVStack` + `Text(AttributedString)` + `Grid`） | 每个 AST 块 → 一个原生子视图 |
+| 编辑态 | **TextKit 2**：`NSTextView.scrollableTextView()`（`NSTextLayoutManager`） | 纯文本、等宽、关闭智能标点 / 拼写 |
+| Markdown 解析 | **`apple/swift-markdown`**（cmark-gfm） | 用 `revision` 精确锁定 commit，不发 semver |
+| 代码高亮 | 自研 `NativeSyntaxHighlighter`（逐行 + 正则分词） | 7 种语言 + 通用兜底 |
+| 材质 / 动效 | `glassEffect` (macOS 26) / `ultraThinMaterial` 回退 + SwiftUI 弹簧动画 | 封装成 `adaptiveGlass()` 修饰器 |
+| 文件类型 | `net.daringfireball.markdown`（导入声明）+ `public.plain-text` | 见 `Sources/App/Info.plist` |
+
+---
+
+## 3. 工程结构
+
 ```
-+-----------------------------------------------------------------------------------+
-|  [●][●][●]  📄 架构设计.md  [ [大纲] [ 📖 阅读 | ✏️ 编辑 ] [ 🔎 查找 ] [ 📤 导出 ] ] | (Liquid Glass Toolbar)
-+-----------------------+-----------------------------------------------------------+
-| 📑 目录大纲 (TOC)      |                                                           |
-| (Glass Sidebar)       |  # 1. 架构总览                                            |
-|                       |                                                           |
-| > 1. 架构总览          |  这是正文段落，采用 **SF Pro Text**，遵循精准行距倍率。   |
-|   > 1.1 性能指标      |                                                           |
-|   > 1.2 内存模型      |  > 引用段落使用原生毛玻璃边框与衬线体展示                 |
-| > 2. 原生渲染引擎     |                                                           |
-| > 3. Liquid Glass     |  ```swift                                                 |
-|                       |  let reader = NativeMarkdownReader()                      |
-|                       |  ```                                                      |
-|                       |                                                           |
-|                       |  | 特性       | 传统 WebKit | 纯原生 TextKit 2 |            |
-|                       |  | :--------- | :---------- | :--------------- |            |
-|                       |  | 内存占用   | ~80MB       | < 15MB           |            |
-|                       |  | 启动耗时   | ~180ms      | < 30ms           |            |
-|                       |                                                           |
-| (可快捷收起 ⌘⌥S)       |  - [x] 纯原生渲染                                         |
-|                       |  - [ ] 导出 PDF                                           |
-+-----------------------+-----------------------------------------------------------+
-| 🪟 浮动状态条 (Glass Capsule): 1,420 字符 · 3 分钟阅读 · UTF-8 (自动淡出)          |
-+-----------------------------------------------------------------------------------+
-```
-
-### 3.2 Liquid Glass 关键交互规范
-1. **统一胶囊工具栏 (Unified Glass Toolbar)**：
-   - 工具栏控件使用 `GlassEffectContainer` 聚合，支持鼠标悬停时自发光微光泽（Specular Highlight）。
-   - 模式切换按钮采用 `.buttonStyle(.glassProminent)` 与 `.buttonStyle(.glass)` 区分阅读与编辑状态。
-2. **浮动状态气泡 (Floating Glass Capsule)**：
-   - 底部字数与阅读时长显示于微型 Liquid Glass 悬浮气泡中，鼠标静止时优雅渐隐（Fade to 40% alpha），不遮挡正文。
-3. **原生排印体系 (Apple Typography Hierarchy)**：
-   - **标题**：`Font.system(.title, design: .default).weight(.semibold)`
-   - **正文**：`Font.system(.body, design: .default)`（字距与行高依据 macOS HIG 黄金比例微调）
-   - **代码**：`Font.system(.body, design: .monospaced)`，搭配极简半透明圆角代码背景
-   - **数学公式与表格**：原生符号与 SwiftUI `Grid` 紧凑网格。
-
----
-
-## 4. 纯原生 Markdown 渲染器架构设计 (Native Engine Pipeline)
-
-### 4.1 渲染管线 (Pipeline Architecture)
-```
-       [ .md 原始文件 / String ]
-                   │
-                   ▼
-       ┌───────────────────────┐
-       │  apple/swift-markdown │  (AST 解析器)
-       └───────────┬───────────┘
-                   │
-                   ▼
-       ┌───────────────────────┐
-       │   MarkupWalker 遍历器  │  (将 AST 转换为类型安全的 Native Nodes)
-       └───────────┬───────────┘
-                   │
-         ┌─────────┴─────────┐
-         │                   │
-         ▼                   ▼
-┌──────────────────┐ ┌──────────────────┐
-│   TOC Extractor  │ │ Native View Gen  │
-│ (提取 H1-H6 大纲) │ │ (构建 SwiftUI 树) │
-└──────────────────┘ └─────────┬────────┘
-                               │
-                               ▼
-                     ┌───────────────────┐
-                     │ MarkdownBodyView  │ (原生 LazyVStack / CoreText)
-                     └───────────────────┘
-```
-
-### 4.2 节点映射表 (Native Component Mapping)
-
-| Markdown 语法 | 原生渲染策略 |
-| :--- | :--- |
-| **Heading 1~6** | `HeadingView` (带锚点 ID 供 TOC 滚动导航，字体尺寸分级) |
-| **Paragraph / Text** | `Text(AttributedString)` (行内加粗/斜体/超链接/行内代码由 AttributedString 原生处理) |
-| **Code Block** | `CodeBlockView` (带语法高亮分词、一键复制按钮、横向滚动、SF Mono 字体) |
-| **Table** | `Grid` + `GridRow` (原生自适应列宽、斑马条纹背景、支持选择) |
-| **Blockquote** | `BlockquoteView` (左侧原生 Accent 强调线 + 浅色底衬) |
-| **List (Ordered/Unordered/Task)** | `TaskItemView` / `ListItemView` (原生 Checkbox 支持交互反写回文档) |
-| **Thematic Break (HR)** | `Divider()` (带轻微渐变边距) |
-
----
-
-## 5. 项目代码组织结构 (Pure Native Architecture)
-
-```text
-MDPreview/
-├── Package.swift                    // 声明 SPM 依赖 (apple/swift-markdown 等)
-├── Sources/
-│   ├── MDPreviewApp/
-│   │   ├── MDPreviewApp.swift       // App 入口 (DocumentGroup 声明)
-│   │   └── Info.plist               // macOS 文件关联 (Document Types / UTI)
-│   │
-│   ├── Models/
-│   │   ├── MarkdownDocument.swift   // FileDocument 协议实现（支持数据序列化与自动保存）
-│   │   ├── DocumentContent.swift    // 纯文本内容与 AST 缓存包装
-│   │   ├── TOCItem.swift            // 目录树节点模型 (Identifiable, Hashable)
-│   │   └── AppPreferences.swift     // 用户偏好（字体排印、行距、主题模式）
-│   │
-│   ├── Engine/
-│   │   ├── MarkdownParser.swift     // 基于 swift-markdown 的 AST 解析服务
-│   │   ├── ASTToViewBuilder.swift   // 将 Document 节点转为原生 View 结构
-│   │   ├── SyntaxHighlighter.swift  // 纯 Swift 极速代码语法着色引擎
-│   │   └── FileMonitor.swift        // DispatchSourceFileSystemObject 外部变更监听
-│   │
-│   ├── UI/
-│   │   ├── Glass/
-│   │   │   ├── GlassCompatibility.swift // Liquid Glass (#available) 与 Material 统一抽象
-│   │   │   └── GlassToolbar.swift       // 统一流体工具栏
-│   │   │
-│   │   ├── Reading/
-│   │   │   ├── NativeReaderView.swift   // 纯原生阅读器容器 (ScrollViewReader 锚点跳转)
-│   │   │   ├── BlockElements.swift      // 标题、代码块、引用、表格等原生组件
-│   │   │   └── TOCSidebarView.swift     // 原生大纲侧边栏 (List + OutlineGroup)
-│   │   │
-│   │   ├── Editor/
-│   │   │   ├── NativeEditorView.swift   // TextKit 2 (NSTextView) 原生编辑器封装
-│   │   │   └── LineNumberRulerView.swift// 极简原生行号尺
-│   │   │
-│   │   ├── Components/
-│   │   │   ├── FloatingStatusCapsule.swift // 底部悬浮信息胶囊
-│   │   │   └── SearchOverlayView.swift     // 原生文本快速查找栏
-│   │   │
-│   │   └── Windows/
-│   │       └── DocumentContentView.swift   // 主视图：SplitView + 阅读/编辑路由
-│   │
-│   └── System/
-│       ├── PDFExporter.swift        // 原生 NSHostingView 绘制生成矢量 PDF
-│       └── PrintHandler.swift       // macOS 标准打印管道集成
+md-reader/
+├── Package.swift              # SPM：MDPreviewCore 库 + 测试；依赖 swift-markdown（revision 锁定）
+├── project.yml                # XcodeGen 配置 → 生成 MDPreview.xcodeproj（App 目标）
+├── package_app.sh             # Release 构建 → ad-hoc 签名 → 打 DMG（DMG 走 Releases，不入库）
+├── .github/workflows/ci.yml   # macos-15：swift build/test + xcodegen + xcodebuild
 │
-└── Tests/
-    ├── MDPreviewTests/
-    └── ParserPerformanceTests/      // AST 解析与布局基准性能测试 (<10ms 目标)
+├── Sources/
+│   ├── App/                           # Xcode App 目标（薄壳）
+│   │   ├── MDPreviewApp.swift         # @main：DocumentGroup + .commands（视图 / 打印）
+│   │   ├── Info.plist                 # 文档类型 / UTI 导入声明（CFBundleDevelopmentRegion = zh_CN）
+│   │   └── Assets.xcassets            # AppIcon
+│   │
+│   └── MDPreviewCore/                 # 全部逻辑与 UI 都在这个库里
+│       ├── Models/
+│       │   ├── MarkdownDocument.swift # FileDocument：UTF-8 / UTF-16 / Latin-1 兜底解码
+│       │   ├── MarkdownBlock.swift    # 渲染树块级枚举 + MarkdownListItem
+│       │   ├── TOCItem.swift          # 大纲节点（可嵌套）
+│       │   └── EditorState.swift      # @MainActor ObservableObject：viewMode / showTOC /
+│       │                              #   targetScrollId / activeHeadingId
+│       │                              #   + DocumentStats（CJK 按字、拉丁按词）
+│       │                              #   + FocusedValue 桥（editorState / printableDocument）
+│       ├── Resources/
+│       │   └── Strings.swift          # enum L：面向用户字符串的唯一集中点（v1.3 国际化改造面）
+│       ├── Engine/
+│       │   ├── MarkdownASTParser.swift        # AST → [MarkdownBlock] + TOC + stats；NSCache(32) + prewarm
+│       │   ├── AttributedStringBuilder.swift  # 行内 AST → AttributedString；==高亮== 正则；行内图片降级为占位符
+│       │   ├── NativeSyntaxHighlighter.swift  # 代码块着色（阅读态）
+│       │   ├── MarkdownSourceHighlighter.swift# 源码着色扫描器（编辑态，逐行 + 正则，跟踪围栏状态）
+│       │   └── FileMonitor.swift              # DispatchSourceFileSystemObject 单文件监听（原子保存感知）
+│       ├── System/
+│       │   └── DocumentPrinter.swift  # 块边界分页 → 矢量 PDF（NSPrintOperation）+ PrintableDocument
+│       └── UI/
+│           ├── MainDocumentView.swift       # 主视图：SplitView 路由 + 防抖解析 + 任务回写 + 热重载 + 打印桥
+│           ├── Glass/
+│           │   ├── GlassAdapter.swift       # adaptiveGlass() / glassPill() 修饰器
+│           │   └── LiquidGlassToolbar.swift # NativeUnifiedToolbar：principal 位分段模式切换器
+│           ├── Reading/
+│           │   ├── NativeReaderView.swift   # ScrollViewReader + LazyVStack；标题偏移 → 当前章节（异步写、防抖动）
+│           │   ├── MarkdownBlockViews.swift # 各块视图 + MarkdownBlockDispatcher + 渲染上下文 Environment（Equatable）
+│           │   └── TOCSidebarView.swift     # 大纲侧边栏：折叠 / 点击跳转 / 当前项高亮
+│           ├── Editor/
+│           │   └── NativeEditorView.swift   # scrollableTextView()；源码着色代码保留但默认关
+│           └── Components/
+│               └── FloatingStatusCapsule.swift # 右下角悬浮字数胶囊（悬停展开行数）
+│
+└── Tests/MDPreviewCoreTests/       # swift-testing：解析 / 统计 / 行内样式 / 源码着色 / FileMonitor / PDF 分页
 ```
 
+> **仓库卫生**：工作区里出现过 Finder 复制产生的 `MDPreview 2.xcodeproj/`，属误入，应删除并在 `.gitignore` 收敛
+> （`MDPreview*.xcodeproj/` 由 XcodeGen 生成，不应入库）。
+
 ---
 
-## 6. Liquid Glass 代码集成示例 (Code Standard)
+## 4. 渲染管线
 
-```swift
-import SwiftUI
-
-/// 统一适配 macOS 26+ Liquid Glass 及旧版本 Material 材质的视图修饰器
-struct AdaptiveGlassModifier: ViewModifier {
-    var cornerRadius: CGFloat = 12
-    var isInteractive: Bool = false
-
-    func body(content: Content) -> some View {
-        if #available(macOS 26, *) {
-            if isInteractive {
-                content
-                    .glassEffect(.regular.interactive(), in: .rect(cornerRadius: cornerRadius))
-            } else {
-                content
-                    .glassEffect(.regular, in: .rect(cornerRadius: cornerRadius))
-            }
-        } else {
-            // 向后兼容 macOS 14 / 15 原生材质
-            content
-                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                        .strokeBorder(Color.white.opacity(0.12), lineWidth: 0.5)
-                )
-        }
-    }
-}
-
-extension View {
-    func adaptiveGlass(cornerRadius: CGFloat = 12, isInteractive: Bool = false) -> some View {
-        self.modifier(AdaptiveGlassModifier(cornerRadius: cornerRadius, isInteractive: isInteractive))
-    }
-}
+```
+ .md 文本 (String)
+      │
+      ▼  MarkdownASTParser.parse(markdown:)              [NSCache 命中则直接返回]
+ Document(parsing:options:[.parseBlockDirectives,.parseSymbolLinks])
+      │
+      ▼  逐 child 遍历 parseBlock(...)                    IDGen 按遍历序产出稳定 id（b0, b1, …）
+      ├── Heading         → .heading(id:"heading-N", level, text, attributed)   ↘ 收集 TOCItem
+      ├── Paragraph       → 仅图片段落 ⇒ .image；否则 .paragraph(attributed)
+      ├── CodeBlock       → NativeSyntaxHighlighter.highlight → .codeBlock
+      ├── BlockQuote      → 递归 parseBlock（collectTOC:false，引用内标题不进大纲）
+      ├── Table           → 表头 / 对齐 / 行 全部 AttributedString
+      ├── U/O/List        → parseListItem 递归；任一项有 checkbox ⇒ .taskList
+      ├── ThematicBreak   → .thematicBreak
+      └── HTMLBlock       → .html(raw)（当前按等宽灰字原样显示，不渲染）
+      │
+      ▼
+ ParsedDocument { blocks: [MarkdownBlock], tocItems: [TOCItem]（stack 建层级）, stats: DocumentStats }
+      │
+      ├─▶ NativeReaderView   LazyVStack{ ForEach(blocks) { MarkdownBlockDispatcher } }  maxWidth 820
+      │                       .textSelection(.enabled)（⚠️ 逐块，跨块不连续）
+      │                       标题 GeometryReader → HeadingOffsetsKey → activeHeadingId → TOC 高亮
+      └─▶ TOCSidebarView     OutlineGroup 式递归行；点击写 targetScrollId → ScrollViewReader.scrollTo
 ```
 
----
+**解析触发**（`MainDocumentView.scheduleParse`）：
 
-## 7. 演进路线 (Roadmap)
+- 首次加载或 `text.utf8.count < 2048`：同步解析（命中缓存近乎零成本）。
+- 大文档：`parseTask` 取消旧任务 → `Task.sleep(250ms)` 防抖 → `Task.detached` 后台解析 → 回主线程赋值。
 
-1. **里程碑 1：原生解析管线与 Document 容器**
-   - 配置 SPM 项目与 `apple/swift-markdown` 依赖。
-   - 实现 `FileDocument` 数据模型与双向响应。
-2. **里程碑 2：纯原生 Block 级阅读器与大纲侧边栏**
-   - 渲染 Heading（带 ID 锚点）、Paragraph、List、Quote。
-   - 原生 CodeBlock 语法着色与 SwiftUI Grid 表格。
-   - `ScrollViewReader` 实现大纲点击精准平滑滚动。
-3. **里程碑 3：TextKit 2 极速编辑器与 Liquid Glass 界面打磨**
-   - `NSTextView` 封装与行号支持。
-   - `⌘E` 丝滑切换动画与 Liquid Glass 胶囊工具栏。
-   - 原生 PDF 导出与外部修改热重载。
+**行内样式**（`AttributedStringBuilder`）：`Emphasis` / `Strong` / `Strikethrough` / `InlineCode`（等宽 + 底色）/
+`Link`（`.linkColor` + 下划线）/ `SoftBreak`→空格 / `LineBreak`→换行 / `==文本==`→黄底（正则 `/==([^=\n]+)==/`，
+不误伤 `a == b`）。**行内图片**目前降级为 ` 🖼️ [alt] ` 文本占位。
+
+**任务回写**（`MainDocumentView.toggleTask`）：按 `sourceLine`（AST 提供的 0 基行号）定位，正则 `\[[ xX]\]`
+就地替换为 `[x]` / `[ ]`，写回 `document.text`，触发重新解析。
 
 ---
 
-## 8. v1.1 实际落地范围 (Shipped)
+## 5. 状态与交互
 
-- **解析正确性**：嵌套列表 / 多段落列表项、标题内联样式保留、`==高亮==` 正则化（不再误伤 `a == b`）、引用块内标题不进 TOC、块级图片渲染（本地 + 远程）。
-- **交互**：任务列表勾选回写源文档；TOC 滚动联动高亮；编辑器 TextKit 2 装配 + 输入法 / 撤销栈保护；按键防抖解析；`.commands` 菜单快捷键（分屏改 `⇧⌘E`）。
-- **工程**：新增 `MDPreview.xcodeproj`（XcodeGen 生成的独立 App 目标，含 `Info.plist`）、`swift-markdown` pin 到具体 commit、`Package.resolved` 纳入版控、swift-testing 单测、GitHub Actions CI；DMG 移出仓库改走 Releases。
+| 关注点 | 实现 |
+| :-- | :-- |
+| 视图模式 | `EditorState.viewMode`（`.reading` / `.editing` / `.split`）；工具栏分段控件直接绑定；菜单命令经 `FocusedValue(\.editorState)` |
+| 大纲开合 | `EditorState.showTOC` ↔ `NavigationSplitViewVisibility` 在 `onChange` 里双向同步（避免视图更新期发状态） |
+| 大纲联动 | 阅读区各标题上 `GeometryReader` 报 y 偏移（量化到 2pt）→ `HeadingOffsetsKey` → 取视口顶 ~80pt 内最后一个 → 用带 60ms sleep 的 `Task` 异步写 `activeHeadingId`（断开同帧回路，压掉 preference / publishing 警告） |
+| 大纲跳转 | 点击写 `targetScrollId` → `NativeReaderView` 的 `ScrollViewReader` `scrollTo(anchor:.top)` 带动画 |
+| 编辑器安全 | `updateNSView` 仅在**外部变更**且 `!isEditing && !hasMarkedText()` 时回灌；`textDidChange` 组字未提交不写回；回灌后钳制并恢复选区 |
+| 编辑器着色 | `MarkdownSourceHighlighter` + `NSTextLayoutManager.renderingAttributesValidator` 已实现（显示层，不进 undo，120ms 防抖）但**默认关闭**（`NativeEditorView.sourceHighlightingEnabled = false`）；v1.3 偏好设置里接开关让用户开启 |
+| 外部拖入 | `MainDocumentView.onDrop([.fileURL])` → `NSDocumentController.openDocument` |
+| 热重载 | 每个 `fileURL` 一个 `FileMonitor`；无本地改动静默重载，冲突弹 `confirmationDialog`，文件被删显示横幅 |
+| 字数统计 | `DocumentStats`：CJK（含假名 / 谚文）逐字计，拉丁按空白 / 标点切词，两者相加 |
 
-**未做（见 README Roadmap）**：阅读区改只读 NSTextView（跨段落连续选择 + 阅读态查找）、编辑器行号 / 语法高亮、PDF 导出、热重载、偏好设置、Quick Look 扩展。
+**快捷键**：`⌘R` / `⌘E` / `⇧⌘E` 阅读 / 编辑 / 分屏；`⌘⌥S` 大纲开合；`⌘P` 打印 / `⌥⌘P` 导出 PDF；
+`⌘N/O/S/⇧S` 文档操作（`DocumentGroup` 提供）；`⌘F` 仅编辑态（`NSTextView.usesFindBar`）。
 
-> 注：v1.1 的阅读区仍是 SwiftUI 逐块 `Text`，多个 `Text` 之间无法连续框选 —— 这一限制留待 v1.2 用 TextKit 2 文本视图统一解决。
+---
+
+## 6. 材质与排印
+
+- **`adaptiveGlass(cornerRadius:isInteractive:tint:)`**：`#available(macOS 26)` 走 `.glassEffect(.regular[.tint][.interactive])`，
+  否则 `ultraThinMaterial` + 细描边 + 轻投影。`glassPill()` = 圆角 100。
+- 目前应用点：`FloatingStatusCapsule`（`glassPill`）、`TOCSidebarView`（`.ultraThinMaterial`）、工具栏分段控件（系统默认）。
+- 排印：正文 `system size 14 / lineSpacing 5`；标题 `26/21/17/15/14/13`，H1·H2 带 `Divider`；代码 `system(size:13,.monospaced)`。
+- 阅读区版心固定 `maxWidth 820`，水平 padding 32 —— 尚不可配置（偏好设置推迟到 v1.3）。
+- 明暗跟随系统（未做主题覆盖）。
+
+---
+
+## 7. 构建与发布
+
+| 环节 | 命令 / 文件 |
+| :-- | :-- |
+| 核心单测 | `swift test`（swift-testing；覆盖解析 / 统计 / 行内样式 / 源码着色 / `FileMonitor` / PDF 分页） |
+| 生成工程 | `brew install xcodegen && xcodegen generate` → `MDPreview.xcodeproj` |
+| 运行 / 预览 / 归档 | `open MDPreview.xcodeproj`（需完整版 Xcode，非 CLT） |
+| 打包 DMG | `./package_app.sh`：Release 免签构建 → `ditto` 到 `/tmp` 清扩展属性 → ad-hoc 签名 → `hdiutil` 组 DMG |
+| CI | `.github/workflows/ci.yml`：`macos-15` 跑 `swift build` / `swift test` / `xcodebuild`（`CODE_SIGNING_ALLOWED=NO`） |
+| 分发 | DMG 不入库，作为 GitHub Release 附件；正式分发需 Developer ID + `notarytool` |
+
+依赖策略：`swift-markdown` 上游无 semver tag，`Package.swift` 用 `revision` 锁 commit；`Package.resolved` 不入库
+（在 Xcode 与命令行 SPM 之间 `originHash` 抖动无意义）。升级 = 改 revision → `swift package update` → 验回归。
+
+---
+
+## 8. 已知限制（Known Gaps）
+
+| # | 限制 | 影响 | 计划 |
+| :-- | :-- | :-- | :-- |
+| G1 | 阅读区是逐块 `Text`，`.textSelection` 无法跨段落 / 跨列表连续框选；阅读态无 `⌘F` / 无原生查词 | 长文复制、检索体验差 | **v1.3**（与 i18n 合并做 TextKit 2 重写） |
+| G2 | 无偏好设置：字号、行距、版心宽度、字体、主题都写死；明暗只跟随系统 | 无法适配阅读习惯 / 视力需求 | **v1.3**（一度在 v1.2 做过又推迟） |
+| G3 | 编辑器无行号、无当前行高亮；源码着色已实现但默认关（`sourceHighlightingEnabled = false`），等 v1.3 偏好设置接开关。一度做过行号，与手搭 TextKit 2 栈冲突，已回退到 `scrollableTextView()` | 编辑长文定位稍弱 | v1.3（随阅读区重写） |
+| G6 | 全部 UI 字符串仍是简体中文（已收敛进 `Strings.swift` 的 `L`）；`CFBundleDevelopmentRegion = zh_CN`；无 `.xcstrings` / `.lproj` | 只能服务中文用户 | **v1.3** |
+| G7 | 无 Quick Look 缩略图 / 预览扩展 | Finder 空格键看到的是纯文本 | **v1.3** |
+| G8 | 行内图片仅占位符；单段落多图按普通段落处理；无数学公式；HTML 块不渲染 | 富文档还原度不足 | v1.3+ |
+| G9 | 无系统化无障碍（VoiceOver 标签 / Dynamic Type / 对比度）审查 | 可访问性欠缺 | **v1.3** |
+| G10 | 代码着色为启发式逐行正则，跨行字符串 / 复杂语法会错色；语言有限；编辑器着色在非 TextKit 2 环境下静默失效 | 观感瑕疵 | 择机 |
+| G11 | 编辑器源码着色：跨段围栏代码块只把 ``` 行本身变灰，块体不整体染色；超大文件按键时整篇重扫 | 长代码块观感、超大文件手感 | v1.3（随阅读区重写） |
+| G12 | 热重载静默 reload 会把文档标记为「已编辑」；文件被删后 monitor 停止，直到再次保存才恢复 | 轻微 UX 瑕疵 | 择机 |
+| G13 | PDF 分页在块边界断，单个超过一页的块（超长代码 / 大表）会溢出被 AppKit 默认切开 | 极端文档打印瑕疵 | v1.3（`NSAttributedString` 路径） |
+
+**v1.2 已解决**：~~G4 无 PDF / 打印~~、~~G5 无外部修改监听~~。
+
+---
+
+## 9. 路线图（Roadmap）
+
+> **v1.2 = 导出 PDF + 热重载 + 字符串收敛**（编辑器源码着色已写好但默认关）；
+> **v1.3 = TextKit 2 阅读区重写 + 国际化 + 偏好设置**（都要动全部渲染 / 文案层，一起做）。
+> 均不改 macOS 14 下限、不引入新第三方依赖。v1.2 已把面向用户字符串收敛进 `Strings.swift` 的 `L` 命名空间，
+> 作为 v1.3 国际化的单一改造面。
+
+> **范围调整记录**：v1.2 一度包含「偏好设置」与「编辑器行号 / 当前行高亮」。偏好设置推迟到 v1.3；
+> 行号槽依赖手搭 TextKit 2 栈，与编辑区渲染冲突，已回退，编辑器恢复到 `scrollableTextView()` + 源码着色。
+
+### v1.2 — ✅（已完成，未发布 / 本地 `v1.2` 分支）
+
+| 项 | 落地内容 |
+| :-- | :-- |
+| **1.2.1 导出 PDF / 打印** (G4) | `DocumentPrinter` + `PrintableDocumentView`：逐块 `NSHostingView` 量高度 → 贪心装页 → `knowsPageRange` / `rectForPage` 在块边界断页 → `NSPrintOperation` 出矢量 PDF（强制浅色外观）。`⌘P` 系统打印面板（自带「存为 PDF」），`⌥⌘P`「导出为 PDF…」带保存面板；`CommandGroup(replacing: .printItem)`，经 `FocusedValue(\.printableDocument)` 取当前文档。 |
+| **1.2.2 外部修改热重载** (G5) | `FileMonitor`（`DispatchSourceFileSystemObject`，`O_EVTONLY`，串行队列，150ms 合并，比对 inode 处理原子保存的 rename，回调派发到主线程）。`MainDocumentView` 每 `fileURL` 一个 monitor：无本地改动 → `NSFileCoordinator` 读盘后静默重载；本地 + 外部都改 → `confirmationDialog`（保留我的 / 用磁盘版本）；文件被删 → 内容区上方橙色横幅。 |
+| **1.2.3 字符串收敛 + 警告清理** | 面向用户字符串迁进 `Strings.swift`（`enum L`）；`ViewMode` 显示名移到 `.title`。修掉 `HeadingOffsetsKey`「preference tried to update multiple times per frame」/「Publishing changes from within view updates」：标题偏移量化到 2pt、`MarkdownRenderContext` 加 `Equatable`、`activeHeadingId` 改带 60ms sleep 的 `Task` 异步写。 |
+| **（隐藏）编辑器源码着色** | `MarkdownSourceHighlighter` 扫描器 + `renderingAttributesValidator` 施加逻辑已实现并有单测，但 `NativeEditorView.sourceHighlightingEnabled = false` 默认关闭（素色源码更简洁）。v1.3 偏好设置里接开关。 |
+
+遗留见 G11–G13。
+
+### v1.3 — TextKit 2 阅读区 + 国际化 + 偏好设置（目标：解决 G1、G2、G3、G6、G7、G9）
+
+| 项 | 内容 | 关键取舍 / 风险 |
+| :-- | :-- | :-- |
+| **1.3.1 阅读区统一只读文本视图** (G1) | 混合式：`AttributedStringBuilder` 扩展出「AST → 单个 `NSAttributedString`（含段落样式 / 锚点属性）」，散文（标题 / 段落 / 列表 / 引用）并入只读 `NSTextView`（TextKit 2）实现跨块框选、阅读态 `⌘F`、原生查词；代码块 / 表格 / 图片 / 任务清单仍作「岛屿块」用 SwiftUI 覆盖视图或 `NSTextAttachment` 混排。 | **最大架构改动**。TOC 滚动联动 / 锚点跳转从 `ScrollViewReader` 迁到 `scrollRangeToVisible`；任务回写、代码复制等交互点要保留。先做纯散文文档再逐步纳入岛屿块。顺带给 1.2.2 的 PDF 做干净分页、给 1.2.1 的围栏整体染色兜底。 |
+| **1.3.2 偏好设置** (G2、G3) | `AppPreferences`（`UserDefaults`）+ `Settings` 场景：字号、行距、版心宽度、正文 / 代码字体、明 / 暗 / 跟随系统、**编辑器源码着色开关**（接 `NativeEditorView.sourceHighlightingEnabled`，代码已就位）。字号 / 行距 / 版心作用于 1.3.1 的 `NSTextView` 段落样式（不再进 `AttributedString`，不需重解析）；编辑器行号 / 当前行高亮此时随新编辑区一并做。 | v1.2 里 typography 进 `AttributedString` + 缓存 key 的做法被证明笨重，1.3.1 的 `NSTextView` 用段落样式改字号是自然解法，所以绑在一起。 |
+| **1.3.3 本地化基础设施** (G6) | 引入 **String Catalog（`.xcstrings`）**；把 `Strings.swift` 的 `L` 每个成员换成 `String(localized:)`（键即属性名），其余代码不动。提供 `en` + `zh-Hans`。`Info.plist`：`CFBundleDevelopmentRegion` 改 `en`，加 `CFBundleLocalizations`。`MDPreviewCore` 声明 `defaultLocalization` 与资源。 | v1.2 已把文案收敛到 `L` 一处，这里改造面单一。CI 加「无遗漏硬编码非 ASCII 字符串」守卫。 |
+| **1.3.4 Locale 感知行为** | 阅读时长 / 数字 / 日期走 `.formatted()`；`DocumentStats` 词计规则保留（已按 CJK / 拉丁分流）。 | RTL 布局审查（`.environment(\.layoutDirection)`），至少不破版；完整 RTL 列 v1.3+。 |
+| **1.3.5 文档类型 / 菜单 / 首启样例本地化** | UTI 描述、文档类型名、菜单项、错误提示全走目录；样例文档按语言给（`SampleDocument.md` / `SampleDocument_en.md`）。 | — |
+| **1.3.6 Quick Look 扩展** (G7) | `QuickLook Preview Extension` + `Thumbnail Extension`，复用 `MDPreviewCore` 渲染，跟随系统语言。 | 独立 target，要进 `project.yml`；沙盒内存 / 时间预算紧。 |
+| **1.3.7 无障碍 pass** (G9) | VoiceOver 标签（本地化后统一补）、尊重 Dynamic Type、对比度、键盘可达性。 | 与 1.3.3 合并推进，标签即字符串。 |
+| **1.3.8 发布物** | 英文 `README.md` + `README.zh-Hans.md`；Release notes 双语；DMG 走 Developer ID 签名 + 公证。 | 需要 Apple Developer 账号；`package_app.sh` 已预留公证注释。 |
+
+**v1.3 出口标准**：长文可跨块连续选择并复制、阅读态 `⌘F` 可用；系统语言切英文时全界面 / 菜单 / Quick Look / 样例文档均为英文，无残留中文；`en` / `zh-Hans` 均通过本地化守卫测试。
+
+### v1.3 之后（候选，未排期）
+
+- 行内图片真正渲染、单段多图、图片缩放 / 点击查看（G8）。
+- 数学公式（考虑纯原生 `NSAttributedString` + 自绘，或谨慎评估轻量依赖）。
+- HTML 块有限渲染。
+- 代码高亮换成基于 tree-sitter / 更严谨的词法分析（G10）。
+- 完整 RTL、更多语言（`ja` / `ko` / `de` / `fr`）。
+- Markdown 方言开关（脚注、定义列表、`[[wiki]]` 链接）。
+
+---
+
+## 10. 术语
+
+| 词 | 指 |
+| :-- | :-- |
+| **块 / block** | `MarkdownBlock` 枚举的一个 case，对应渲染树里的一个原生子视图 |
+| **岛屿块 / island** | v1.2 术语：不并入连续正文流、单独用 SwiftUI 视图渲染的块（代码块 / 表格 / 图片 / 任务清单） |
+| **锚点 / anchor** | 标题的稳定 id（`heading-N`），供 TOC 点击滚动与 URL 片段定位 |
+| **回灌 / write-back** | 编辑器把外部对 `document.text` 的变更同步进 `NSTextView`（严格避开输入法组字与正在编辑态） |
+| **本地化守卫** | v1.3 的 CI 检查：源码里不得出现面向用户的硬编码非 ASCII 字符串 |

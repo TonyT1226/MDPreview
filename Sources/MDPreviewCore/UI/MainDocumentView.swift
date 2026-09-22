@@ -11,6 +11,13 @@ public struct MainDocumentView: View {
     @State private var parseTask: Task<Void, Never>?
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
 
+    // 外部修改热重载
+    @State private var monitor: FileMonitor?
+    @State private var lastDiskText: String = ""
+    @State private var conflictDiskText: String?
+    @State private var showConflict = false
+    @State private var fileMissing = false
+
     public init(document: Binding<MarkdownDocument>, fileURL: URL? = nil) {
         self._document = document
         self.fileURL = fileURL
@@ -19,7 +26,7 @@ public struct MainDocumentView: View {
     private var documentTitle: String {
         if let name = fileURL?.lastPathComponent, !name.isEmpty { return name }
         if let firstHeading = parsedDoc.tocItems.first?.title, !firstHeading.isEmpty { return firstHeading }
-        return "未命名.md"
+        return L.untitledDocument
     }
 
     private var baseURL: URL? {
@@ -36,16 +43,46 @@ public struct MainDocumentView: View {
             .navigationSplitViewColumnWidth(min: 180, ideal: 220, max: 320)
         } detail: {
             ZStack(alignment: .bottomTrailing) {
-                mainContentView
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                VStack(spacing: 0) {
+                    if fileMissing { fileMissingBanner }
+                    mainContentView
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
                 FloatingStatusCapsule(stats: parsedDoc.stats)
             }
             .navigationTitle(documentTitle)
             .toolbar { NativeUnifiedToolbar(state: state) }
+            .confirmationDialog(L.externalChangeTitle, isPresented: $showConflict, titleVisibility: .visible) {
+                Button(L.useDiskVersion) {
+                    if let disk = conflictDiskText {
+                        document.text = disk
+                        lastDiskText = disk
+                    }
+                    conflictDiskText = nil
+                }
+                Button(L.keepMyChanges, role: .cancel) {
+                    lastDiskText = conflictDiskText ?? lastDiskText
+                    conflictDiskText = nil
+                }
+            } message: {
+                Text(L.externalChangeMessage)
+            }
         }
         .navigationSplitViewStyle(.balanced)
         .focusedSceneValue(\.editorState, state)
+        .focusedSceneValue(\.printableDocument, PrintableDocument(
+            parsed: parsedDoc,
+            title: documentTitle,
+            baseURL: baseURL
+        ))
         .onAppear { scheduleParse(text: document.text, immediate: true) }
+        .onChange(of: fileURL, initial: true) { _, url in
+            setupMonitor(for: url)
+        }
+        .onDisappear {
+            monitor?.stop()
+            monitor = nil
+        }
         .onChange(of: document.text) { _, newText in
             scheduleParse(text: newText, immediate: false)
         }
@@ -77,11 +114,64 @@ public struct MainDocumentView: View {
         case .reading:
             reader
         case .editing:
-            NativeEditorView(text: $document.text)
+            editor
         case .split:
             HSplitView {
-                NativeEditorView(text: $document.text).frame(minWidth: 320)
+                editor.frame(minWidth: 320)
                 reader.frame(minWidth: 320)
+            }
+        }
+    }
+
+    private var editor: some View {
+        NativeEditorView(text: $document.text)
+    }
+
+    private var fileMissingBanner: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundColor(.orange)
+            Text(L.fileDeletedOnDisk)
+                .font(.system(size: 12))
+            Spacer()
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(Color.orange.opacity(0.12))
+    }
+
+    // MARK: - 外部修改热重载
+
+    private func setupMonitor(for url: URL?) {
+        monitor?.stop()
+        monitor = nil
+        fileMissing = false
+        guard let url else { return }
+        lastDiskText = document.text
+        monitor = FileMonitor(url: url) { event in
+            handleFileEvent(event)
+        }
+    }
+
+    private func handleFileEvent(_ event: FileMonitor.Event) {
+        switch event {
+        case .deleted:
+            fileMissing = true
+        case .modified:
+            fileMissing = false
+            guard let url = fileURL, let disk = FileMonitor.readText(at: url) else { return }
+            if disk == document.text {
+                lastDiskText = disk
+                return
+            }
+            if document.text == lastDiskText {
+                // 本地无改动 —— 静默重载
+                document.text = disk
+                lastDiskText = disk
+            } else {
+                // 本地 + 外部都改了 —— 让用户选
+                conflictDiskText = disk
+                showConflict = true
             }
         }
     }

@@ -2,11 +2,20 @@ import SwiftUI
 import Combine
 
 public enum ViewMode: String, CaseIterable, Identifiable, Sendable {
-    case reading = "阅读"
-    case editing = "编辑"
-    case split = "分屏"
+    case reading
+    case editing
+    case split
 
     public var id: String { rawValue }
+
+    /// 面向用户的显示名（走集中的字符串表）
+    public var title: String {
+        switch self {
+        case .reading: return L.viewModeReading
+        case .editing: return L.viewModeEditing
+        case .split: return L.viewModeSplit
+        }
+    }
 
     public var icon: String {
         switch self {
@@ -65,7 +74,6 @@ public final class EditorState: ObservableObject {
     @Published public var targetScrollId: String? = nil
     /// 正文滚动时当前视口顶部最近的标题 id（用于 TOC 联动高亮）
     @Published public var activeHeadingId: String? = nil
-    @Published public var fontSizeDelta: Double = 0.0
 
     public init(viewMode: ViewMode = .reading, showTOC: Bool = true) {
         self.viewMode = viewMode
@@ -91,9 +99,19 @@ public struct EditorStateFocusedValueKey: FocusedValueKey {
     public typealias Value = EditorState
 }
 
+public struct PrintableDocumentFocusedValueKey: FocusedValueKey {
+    public typealias Value = PrintableDocument
+}
+
 public extension FocusedValues {
     var editorState: EditorState? {
         get { self[EditorStateFocusedValueKey.self] }
         set { self[EditorStateFocusedValueKey.self] = newValue }
+    }
+
+    /// 当前聚焦窗口的文档快照，供「打印 / 导出 PDF」菜单命令使用
+    var printableDocument: PrintableDocument? {
+        get { self[PrintableDocumentFocusedValueKey.self] }
+        set { self[PrintableDocumentFocusedValueKey.self] = newValue }
     }
 }

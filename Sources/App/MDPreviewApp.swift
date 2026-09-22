@@ -17,6 +17,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 struct MDPreviewApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @FocusedValue(\.editorState) private var editorState: EditorState?
+    @FocusedValue(\.printableDocument) private var printable: PrintableDocument?
 
     var body: some Scene {
         DocumentGroup(newDocument: MarkdownDocument()) { file in
@@ -29,24 +30,38 @@ struct MDPreviewApp: App {
             ToolbarCommands()
             TextEditingCommands()
 
-            CommandMenu("视图") {
-                Button("阅读模式") { editorState?.setViewMode(.reading) }
+            CommandMenu(L.menuView) {
+                Button(L.readingMode) { editorState?.setViewMode(.reading) }
                     .keyboardShortcut("r", modifiers: .command)
                     .disabled(editorState == nil)
-                Button("编辑模式") { editorState?.setViewMode(.editing) }
+                Button(L.editingMode) { editorState?.setViewMode(.editing) }
                     .keyboardShortcut("e", modifiers: .command)
                     .disabled(editorState == nil)
-                Button("分屏模式") { editorState?.setViewMode(.split) }
+                Button(L.splitMode) { editorState?.setViewMode(.split) }
                     .keyboardShortcut("e", modifiers: [.command, .shift])
                     .disabled(editorState == nil)
 
                 Divider()
 
-                Button((editorState?.showTOC ?? true) ? "隐藏目录大纲" : "显示目录大纲") {
+                Button((editorState?.showTOC ?? true) ? L.hideOutline : L.showOutline) {
                     editorState?.toggleTOC()
                 }
                 .keyboardShortcut("s", modifiers: [.command, .option])
                 .disabled(editorState == nil)
+            }
+
+            CommandGroup(replacing: .printItem) {
+                Button(L.printDocument) {
+                    if let printable { DocumentPrinter.runPrintPanel(printable) }
+                }
+                .keyboardShortcut("p", modifiers: .command)
+                .disabled(printable == nil)
+
+                Button(L.exportPDF) {
+                    if let printable { DocumentPrinter.exportPDF(printable) }
+                }
+                .keyboardShortcut("p", modifiers: [.command, .option])
+                .disabled(printable == nil)
             }
         }
     }

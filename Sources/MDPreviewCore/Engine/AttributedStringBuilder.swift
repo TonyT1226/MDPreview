@@ -56,7 +56,7 @@ public struct AttributedStringBuilder: Sendable {
             return inner
 
         case let image as Markdown.Image:
-            let altText = image.plainText.isEmpty ? (image.title ?? "图片") : image.plainText
+            let altText = image.plainText.isEmpty ? (image.title ?? L.imageGenericAlt) : image.plainText
             var attr = AttributedString(" 🖼️ [\(altText)] ")
             attr.foregroundColor = Color(nsColor: .secondaryLabelColor)
             if let dest = image.source, let url = URL(string: dest) {

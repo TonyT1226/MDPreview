@@ -13,7 +13,10 @@ public struct AdaptiveGlassModifier: ViewModifier {
     }
 
     public func body(content: Content) -> some View {
-        #if compiler(>=6.0)
+        // `glassEffect` 只在 macOS 26 SDK 里声明；Swift 6.0 编译器（如 Xcode 16）也满足
+        // #available 的运行时检查，但符号在旧 SDK 里根本不存在，会编译失败。
+        // 用编译器版本代理 SDK 版本：Xcode 26 才捆绑 Swift 6.2 + macOS 26 SDK。
+        #if compiler(>=6.2)
         if #available(macOS 26, *) {
             // Liquid Glass 规范：优先使用系统原生 glassEffect 材质
             if let tint = tint {

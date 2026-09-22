@@ -16,12 +16,12 @@ public struct TOCSidebarView: View {
         VStack(alignment: .leading, spacing: 0) {
             // 顶部大纲标题栏
             HStack {
-                Label("目录大纲", systemImage: "list.bullet.indent")
+                Label(L.outlineTitle, systemImage: "list.bullet.indent")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundColor(.secondary)
                 Spacer()
-                
-                Text("\(totalItemCount(items)) 项")
+
+                Text(L.outlineItemCount(totalItemCount(items)))
                     .font(.system(size: 10, weight: .medium, design: .monospaced))
                     .foregroundColor(.secondary.opacity(0.7))
             }
@@ -37,7 +37,7 @@ public struct TOCSidebarView: View {
                     Image(systemName: "text.alignleft")
                         .font(.system(size: 24))
                         .foregroundColor(.secondary.opacity(0.4))
-                    Text("当前文档无标题层级")
+                    Text(L.outlineEmpty)
                         .font(.system(size: 12))
                         .foregroundColor(.secondary)
                     Spacer()

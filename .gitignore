@@ -12,6 +12,8 @@ DerivedData/
 *.xcodeproj/project.xcworkspace/xcuserdata/
 *.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
 *.xcworkspace/xcuserdata/
+# iCloud / 文件提供程序在 xcodegen 重写工程时产生的冲突副本
+MDPreview [0-9]*.xcodeproj/
 
 # Build Artifacts & Applications
 *.app/
