@@ -91,8 +91,8 @@ md-reader/
 └── Tests/MDPreviewCoreTests/       # swift-testing：解析 / 统计 / 行内样式 / 源码着色 / FileMonitor / PDF 分页
 ```
 
-> **仓库卫生**：工作区里出现过 Finder 复制产生的 `MDPreview 2.xcodeproj/`，属误入，应删除并在 `.gitignore` 收敛
-> （`MDPreview*.xcodeproj/` 由 XcodeGen 生成，不应入库）。
+> **仓库卫生**：曾出现过 iCloud 在 XcodeGen 重写工程时产生的冲突副本（`MDPreview 2.xcodeproj/` 等），
+> 已删除并在 `.gitignore` 加了 `MDPreview [0-9]*.xcodeproj/` 规则防止再入库。
 
 ---
 
@@ -213,7 +213,7 @@ md-reader/
 > **范围调整记录**：v1.2 一度包含「偏好设置」与「编辑器行号 / 当前行高亮」。偏好设置推迟到 v1.3；
 > 行号槽依赖手搭 TextKit 2 栈，与编辑区渲染冲突，已回退，编辑器恢复到 `scrollableTextView()` + 源码着色。
 
-### v1.2 — ✅（已完成，未发布 / 本地 `v1.2` 分支）
+### v1.2 — ✅（已发布，见 [Release v1.2.0](https://github.com/TonyT1226/MDPreview/releases/tag/v1.2.0)）
 
 | 项 | 落地内容 |
 | :-- | :-- |
