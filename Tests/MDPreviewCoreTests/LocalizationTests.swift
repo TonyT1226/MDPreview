@@ -35,7 +35,13 @@ struct LocalizationTests {
         }
     }
 
-    @Test("中文翻译与英文复数都能取到")
+    /// 较旧的 SwiftPM（Xcode 16 / Swift 6.0 命令行）不会把 .xcstrings 编译成 .lproj，
+    /// 这时跳过；Xcode 构建和新版 SwiftPM 都会编译，照常检查。
+    static var catalogCompiled: Bool {
+        Bundle.module.path(forResource: "zh-Hans", ofType: "lproj") != nil
+    }
+
+    @Test("中文翻译与英文复数都能取到", .enabled(if: catalogCompiled))
     func lookups() throws {
         let zh = try lproj("zh-Hans")
         let en = try lproj("en")
