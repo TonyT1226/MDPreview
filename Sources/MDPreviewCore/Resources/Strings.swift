@@ -76,6 +76,24 @@ public enum L {
     public static let themeLight = "浅色"
     public static let themeDark = "深色"
 
+    public static let prefsReading = "阅读"
+    public static let prefsFont = "字体"
+    public static let prefsFontSize = "字号"
+    public static let prefsLineHeight = "行距"
+    public static let prefsContentWidth = "版心宽度"
+    public static let prefsAppearance = "外观"
+    public static let prefsTheme = "主题"
+    public static let prefsEditor = "编辑器"
+    public static let prefsSourceHighlighting = "Markdown 源码着色"
+    public static let prefsSourceHighlightingHint = "在编辑视图里给标题、强调、代码、链接等语法标记上色。"
+    public static let prefsRestoreDefaults = "恢复默认设置"
+    public static func pointValue(_ n: Int) -> String { "\(n) pt" }
+
+    public static let zoomIn = "放大"
+    public static let zoomOut = "缩小"
+    public static let actualSize = "实际大小"
+    public static let editorAccessibilityLabel = "Markdown 源码"
+
     // MARK: - 导出
 
     public static let exportPDFPanelTitle = "导出为 PDF"

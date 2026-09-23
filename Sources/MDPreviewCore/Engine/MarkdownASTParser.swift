@@ -86,9 +86,10 @@ public struct MarkdownASTParser: Sendable {
         switch markup {
         case let heading as Markdown.Heading:
             headingCounter += 1
-            let titleText = heading.plainText.trimmingCharacters(in: .whitespacesAndNewlines)
             let anchorId = "heading-\(headingCounter)"
             let attributed = AttributedStringBuilder.build(from: heading)
+            // 用渲染后的文字做标题（plainText 会保留行内代码的反引号、==高亮== 标记）
+            let titleText = String(attributed.characters).trimmingCharacters(in: .whitespacesAndNewlines)
             if collectTOC {
                 tocList.append(TOCItem(id: anchorId, level: heading.level, title: titleText))
             }

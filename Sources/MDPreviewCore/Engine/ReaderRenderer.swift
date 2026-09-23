@@ -93,10 +93,11 @@ public struct ReaderRenderer {
             return .systemFont(ofSize: size, weight: weight)
         case .serif:
             let base = NSFont.systemFont(ofSize: size, weight: weight)
-            if let desc = base.fontDescriptor.withDesign(.serif), let f = NSFont(descriptor: desc, size: size) {
-                return f
-            }
-            return base
+            guard let serif = base.fontDescriptor.withDesign(.serif) else { return base }
+            // New York 不含中日韩字形；显式回退到宋体，避免系统回退字体的标点间距变宽
+            let cjk = NSFontDescriptor(fontAttributes: [.family: "Songti SC"])
+            let desc = serif.addingAttributes([.cascadeList: [cjk]])
+            return NSFont(descriptor: desc, size: size) ?? base
         case .monospaced:
             return .monospacedSystemFont(ofSize: size, weight: weight)
         }

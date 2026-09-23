@@ -8,6 +8,15 @@ import AppKit
 @MainActor
 struct SnapshotTests {
 
+    /// MDP_SNAPSHOT_FONT=serif|monospaced 可切换字体
+    static var snapshotStyle: ReaderStyle {
+        var s = ReaderStyle.default
+        if let f = ProcessInfo.processInfo.environment["MDP_SNAPSHOT_FONT"].flatMap(ReaderFontFamily.init(rawValue:)) {
+            s.fontFamily = f
+        }
+        return s
+    }
+
     @Test("渲染示例文档快照", .enabled(if: ProcessInfo.processInfo.environment["MDP_SNAPSHOT_DIR"] != nil))
     func renderSample() throws {
         let dir = URL(fileURLWithPath: ProcessInfo.processInfo.environment["MDP_SNAPSHOT_DIR"]!)
@@ -20,7 +29,7 @@ struct SnapshotTests {
             let tv = ReaderTextView.make()
             tv.appearance = NSAppearance(named: appearance)
             tv.frame = NSRect(x: 0, y: 0, width: 1000, height: 100)
-            let rendered = ReaderRenderer(style: .default, baseURL: URL(fileURLWithPath: source).deletingLastPathComponent())
+            let rendered = ReaderRenderer(style: Self.snapshotStyle, baseURL: URL(fileURLWithPath: source).deletingLastPathComponent())
                 .render(parsed.blocks)
             tv.textStorage?.setAttributedString(rendered.text)
             tv.layoutManager!.ensureLayout(for: tv.textContainer!)

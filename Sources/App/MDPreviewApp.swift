@@ -10,6 +10,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.activate(ignoringOtherApps: true)
 
         MarkdownASTParser.prewarm()
+        ThemeController.shared.start()
     }
 }
 
@@ -48,6 +49,15 @@ struct MDPreviewApp: App {
                 }
                 .keyboardShortcut("s", modifiers: [.command, .option])
                 .disabled(editorState == nil)
+
+                Divider()
+
+                Button(L.zoomIn) { FontZoom.increase() }
+                    .keyboardShortcut("=", modifiers: .command)
+                Button(L.zoomOut) { FontZoom.decrease() }
+                    .keyboardShortcut("-", modifiers: .command)
+                Button(L.actualSize) { FontZoom.reset() }
+                    .keyboardShortcut("0", modifiers: .command)
             }
 
             CommandGroup(replacing: .printItem) {
@@ -63,6 +73,10 @@ struct MDPreviewApp: App {
                 .keyboardShortcut("p", modifiers: [.command, .option])
                 .disabled(printable == nil)
             }
+        }
+
+        Settings {
+            PreferencesView()
         }
     }
 }
