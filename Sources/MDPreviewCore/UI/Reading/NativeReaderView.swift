@@ -313,6 +313,18 @@ final class ReaderTextView: NSTextView {
         return tv
     }
 
+    /// 窗口里还没有焦点时接过焦点，这样打开文档后直接按 ⌘F 就能查找
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        guard let window else { return }
+        DispatchQueue.main.async { [weak self, weak window] in
+            guard let self, let window, self.window === window else { return }
+            if window.firstResponder === window || window.firstResponder == nil {
+                window.makeFirstResponder(self)
+            }
+        }
+    }
+
     override func setFrameSize(_ newSize: NSSize) {
         super.setFrameSize(newSize)
         updateInsets()
