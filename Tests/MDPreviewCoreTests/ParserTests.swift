@@ -112,7 +112,7 @@ struct InlineTests {
         let attr = AttributedStringBuilder.parseHighlightSyntax(in: "前 ==重点== 后，判断 a == b 成立")
         let plain = String(attr.characters)
         #expect(plain == "前 重点 后，判断 a == b 成立")
-        let hasHighlight = attr.runs.contains { $0.backgroundColor != nil }
+        let hasHighlight = attr.runs.contains { $0.appKit.backgroundColor != nil }
         #expect(hasHighlight)
     }
 }

@@ -1,21 +1,14 @@
-import SwiftUI
+import AppKit
 
 /// 纯原生轻量代码语法着色引擎
 public struct NativeSyntaxHighlighter: Sendable {
     
     public static func highlight(code: String, language: String?) -> AttributedString {
-        let codeFont: Font = .system(size: 13, weight: .regular, design: .monospaced)
-        var attributed = AttributedString(code)
-        attributed.font = codeFont
-
+        // 只着色，不定字体：等宽字体与字号由 ReaderRenderer 统一设置
         let lang = (language ?? "").lowercased().trimmingCharacters(in: .whitespaces)
         if lang.isEmpty {
-            attributed.foregroundColor = .primary
-            return attributed
+            return AttributedString(code)
         }
-
-        // 默认基础着色
-        attributed.foregroundColor = .primary
 
         let keywords: Set<String>
         let types: Set<String>
@@ -61,19 +54,14 @@ public struct NativeSyntaxHighlighter: Sendable {
         var result = AttributedString()
         
         for (i, line) in lines.enumerated() {
-            var lineAttr = highlightLine(
+            result.append(highlightLine(
                 line: line,
                 keywords: keywords,
                 types: types,
                 commentPrefixes: commentPrefixes
-            )
-            lineAttr.font = codeFont
-            result.append(lineAttr)
-
+            ))
             if i < lines.count - 1 {
-                var newline = AttributedString("\n")
-                newline.font = codeFont
-                result.append(newline)
+                result.append(AttributedString("\n"))
             }
         }
 
@@ -92,7 +80,7 @@ public struct NativeSyntaxHighlighter: Sendable {
         // 1. 注释整行检查
         for prefix in commentPrefixes {
             if trimmed.hasPrefix(prefix) {
-                attributed.foregroundColor = Color(nsColor: .systemGreen).opacity(0.85)
+                attributed.appKit.foregroundColor = .systemGreen
                 return attributed
             }
         }
@@ -114,17 +102,17 @@ public struct NativeSyntaxHighlighter: Sendable {
             
             if token.hasPrefix("\"") || token.hasPrefix("'") {
                 // 字符串
-                attributed[attrRange].foregroundColor = Color(nsColor: .systemRed).opacity(0.9)
+                attributed[attrRange].appKit.foregroundColor = .systemRed
             } else if Double(token) != nil {
                 // 数字
-                attributed[attrRange].foregroundColor = Color(nsColor: .systemBlue)
+                attributed[attrRange].appKit.foregroundColor = .systemBlue
             } else if keywords.contains(token) {
                 // 关键字
-                attributed[attrRange].foregroundColor = Color(nsColor: .systemPurple)
+                attributed[attrRange].appKit.foregroundColor = .systemPurple
                 attributed[attrRange].inlinePresentationIntent = .stronglyEmphasized
             } else if types.contains(token) {
                 // 类型
-                attributed[attrRange].foregroundColor = Color(nsColor: .systemTeal)
+                attributed[attrRange].appKit.foregroundColor = .systemTeal
             }
         }
 

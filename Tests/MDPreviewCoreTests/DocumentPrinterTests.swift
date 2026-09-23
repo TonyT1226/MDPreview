@@ -13,18 +13,15 @@ struct DocumentPrinterTests {
         return PrintableDocument(parsed: parsed, title: "长文.md", baseURL: nil)
     }
 
-    @Test("长文档被分成多页，块边界不为空")
-    func paginatesLongDocument() {
+    @Test("长文档排出的打印视图高于多页纸")
+    func longDocumentSpansPages() {
         let doc = longDocument(paragraphs: 60)
-        let view = DocumentPrinter.paginatedViewForTesting(
-            doc, pageSize: NSSize(width: 468, height: 300)
-        )
-        #expect(view.pageCount > 1)
-
-        var range = NSRange()
-        #expect(view.knowsPageRange(&range))
-        #expect(range.length == view.pageCount)
-        #expect(range.location == 1)
+        let view = DocumentPrinter.textViewForTesting(doc, width: 468)
+        #expect(view.frame.width == 468)
+        #expect(view.frame.height > 300 * 3)
+        #expect(view.string.contains("第 60 段"))
+        // 打印视图固定浅色外观
+        #expect(view.appearance?.name == .aqua)
     }
 
     @Test("空文档不产出打印视图")

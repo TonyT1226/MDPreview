@@ -38,10 +38,9 @@ public enum L {
     public static let emptyDocument = "空白文档"
     public static let untitledDocument = "未命名.md"
 
-    // MARK: - 代码块
-
-    public static let copy = "复制"
-    public static let copied = "已复制"
+    public static let readerAccessibilityLabel = "文档内容"
+    public static let taskDone = "已完成"
+    public static let taskTodo = "未完成"
 
     // MARK: - 图片占位
 
@@ -49,6 +48,7 @@ public enum L {
     public static let imageLoadFailed = "图片加载失败"
     public static let imageCannotLoad = "无法加载图片"
     public static let imageInvalidPath = "图片路径无效"
+    public static let imageLoading = "图片加载中"
     /// 占位符正文 + 可选 alt 文本，如「图片加载失败：示意图」
     public static func imagePlaceholder(_ message: String, alt: String) -> String {
         alt.isEmpty ? message : "\(message)：\(alt)"
@@ -66,6 +66,15 @@ public enum L {
     public static let keepMyChanges = "保留我的更改"
     public static let useDiskVersion = "使用磁盘版本"
     public static let fileDeletedOnDisk = "此文件已在磁盘上被删除或移动。"
+
+    // MARK: - 偏好设置
+
+    public static let fontSystem = "系统字体"
+    public static let fontSerif = "衬线字体"
+    public static let fontMonospaced = "等宽字体"
+    public static let themeSystem = "跟随系统"
+    public static let themeLight = "浅色"
+    public static let themeDark = "深色"
 
     // MARK: - 导出
 
