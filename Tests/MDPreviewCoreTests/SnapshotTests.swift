@@ -43,4 +43,23 @@ struct SnapshotTests {
             try rep.representation(using: .png, properties: [:])!.write(to: dir.appendingPathComponent("reader-\(name).png"))
         }
     }
+
+    @Test("渲染 Quick Look 缩略图快照", .enabled(if: ProcessInfo.processInfo.environment["MDP_SNAPSHOT_DIR"] != nil))
+    func renderThumbnail() throws {
+        let dir = URL(fileURLWithPath: ProcessInfo.processInfo.environment["MDP_SNAPSHOT_DIR"]!)
+        let source = #filePath.replacingOccurrences(of: "Tests/MDPreviewCoreTests/SnapshotTests.swift", with: "SampleDocument.md")
+        let md = try String(contentsOfFile: source, encoding: .utf8)
+        let size = CGSize(width: 256, height: 330)
+        let draw = QuickLookSupport.thumbnailDrawing(markdown: md, size: size)
+
+        let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 512, pixelsHigh: 660, bitsPerSample: 8,
+                                   samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+                                   colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
+        rep.size = NSSize(width: size.width, height: size.height)
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
+        #expect(draw())
+        NSGraphicsContext.restoreGraphicsState()
+        try rep.representation(using: .png, properties: [:])!.write(to: dir.appendingPathComponent("thumbnail.png"))
+    }
 }
