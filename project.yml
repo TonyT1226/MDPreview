@@ -3,6 +3,7 @@
 name: MDPreview
 options:
   bundleIdPrefix: com.mdpreview
+  developmentLanguage: en
   deploymentTarget:
     macOS: "14.0"
   createIntermediateGroups: true
@@ -10,7 +11,7 @@ options:
 
 settings:
   base:
-    MARKETING_VERSION: "1.2.0"
+    MARKETING_VERSION: "1.3.0"
     CURRENT_PROJECT_VERSION: "1"
     SWIFT_VERSION: "6.0"
     DEVELOPMENT_TEAM: ""
@@ -30,6 +31,8 @@ targets:
     dependencies:
       - package: MDPreviewCore
         product: MDPreviewCore
+      - target: MDPreviewQuickLook
+      - target: MDPreviewThumbnail
     settings:
       base:
         PRODUCT_NAME: MDPreview
@@ -43,3 +46,74 @@ targets:
       testTargets:
         - package: MDPreviewCore/MDPreviewCoreTests
       gatherCoverageData: false
+
+  # Finder 空格预览
+  MDPreviewQuickLook:
+    type: app-extension
+    platform: macOS
+    sources:
+      - path: Sources/QuickLookPreview
+    dependencies:
+      - package: MDPreviewCore
+        product: MDPreviewCore
+      - sdk: QuickLookUI.framework
+    info:
+      path: Sources/QuickLookPreview/Info.plist
+      properties:
+        CFBundleDisplayName: MDPreview Quick Look
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSMinimumSystemVersion: $(MACOSX_DEPLOYMENT_TARGET)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.quicklook.preview
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).PreviewViewController
+          NSExtensionAttributes:
+            QLIsDataBasedPreview: false
+            QLSupportsSearchableItems: false
+            QLSupportedContentTypes:
+              - net.daringfireball.markdown
+              - public.markdown
+    entitlements:
+      path: Sources/QuickLookPreview/QuickLookPreview.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.files.user-selected.read-only: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mdpreview.app.quicklook
+        SKIP_INSTALL: YES
+
+  # Finder 缩略图
+  MDPreviewThumbnail:
+    type: app-extension
+    platform: macOS
+    sources:
+      - path: Sources/QuickLookThumbnail
+    dependencies:
+      - package: MDPreviewCore
+        product: MDPreviewCore
+      - sdk: QuickLookThumbnailing.framework
+    info:
+      path: Sources/QuickLookThumbnail/Info.plist
+      properties:
+        CFBundleDisplayName: MDPreview Thumbnail
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSMinimumSystemVersion: $(MACOSX_DEPLOYMENT_TARGET)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.quicklook.thumbnail
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ThumbnailProvider
+          NSExtensionAttributes:
+            QLThumbnailMinimumDimension: 0
+            QLSupportedContentTypes:
+              - net.daringfireball.markdown
+              - public.markdown
+    entitlements:
+      path: Sources/QuickLookThumbnail/QuickLookThumbnail.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.files.user-selected.read-only: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mdpreview.app.thumbnail
+        SKIP_INSTALL: YES

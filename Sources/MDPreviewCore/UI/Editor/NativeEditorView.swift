@@ -4,16 +4,24 @@ import AppKit
 /// 基于 TextKit 2 与 `NSTextView` 的纯原生极简编辑器。
 public struct NativeEditorView: NSViewRepresentable {
     @Binding public var text: String
+    /// 编辑器字号（跟随阅读区字号偏好，略小一号的等宽体）
+    public var fontSize: CGFloat
+    /// Markdown 源码着色（偏好设置里的开关，默认关）。
+    /// `MarkdownSourceHighlighter` + `renderingAttributesValidator` 走显示层属性，
+    /// 不进 undo 栈、不打断输入法。
+    public var highlighting: Bool
+    /// 左侧行号栏（光标所在行加深）
+    public var lineNumbers: Bool
 
-    /// Markdown 源码语法着色总开关。
-    ///
-    /// 实现完整保留（`MarkdownSourceHighlighter` + 下面的 `renderingAttributesValidator`
-    /// 走显示层属性，不进 undo 栈、不打断输入法），但默认**关闭** —— 素色源码更简洁。
-    /// 等 v1.3 做偏好设置时，把这里接一个 `AppPreferences` 开关即可让用户手动开启。
-    static let sourceHighlightingEnabled = false
-
-    public init(text: Binding<String>) {
+    public init(text: Binding<String>, fontSize: CGFloat = 13.5, highlighting: Bool = false, lineNumbers: Bool = true) {
         self._text = text
+        self.fontSize = fontSize
+        self.highlighting = highlighting
+        self.lineNumbers = lineNumbers
+    }
+
+    static func editorFont(size: CGFloat) -> NSFont {
+        .monospacedSystemFont(ofSize: size, weight: .regular)
     }
 
     public func makeCoordinator() -> Coordinator { Coordinator(self) }
@@ -26,7 +34,7 @@ public struct NativeEditorView: NSViewRepresentable {
 
         guard let textView = scrollView.documentView as? NSTextView else { return scrollView }
 
-        textView.font = NSFont.monospacedSystemFont(ofSize: 13.5, weight: .regular)
+        textView.font = Self.editorFont(size: fontSize)
         textView.textColor = .textColor
         textView.backgroundColor = .textBackgroundColor
         textView.drawsBackground = true
@@ -45,21 +53,27 @@ public struct NativeEditorView: NSViewRepresentable {
         textView.delegate = context.coordinator
         context.coordinator.textView = textView
 
-        // 源码着色：TextKit 2 显示层属性验证器（默认关闭，见 sourceHighlightingEnabled）
-        if Self.sourceHighlightingEnabled, let tlm = textView.textLayoutManager {
-            tlm.renderingAttributesValidator = { [weak coordinator = context.coordinator] tlm, fragment in
-                MainActor.assumeIsolated {
-                    coordinator?.applyRenderingAttributes(tlm, fragment)
-                }
-            }
-            context.coordinator.recomputeTokens(for: text)
-        }
+        context.coordinator.setHighlighting(highlighting)
+        context.coordinator.setLineNumbers(lineNumbers, fontSize: fontSize)
+        textView.setAccessibilityLabel(L.editorAccessibilityLabel)
+
+        scrollView.contentView.postsBoundsChangedNotifications = true
+        NotificationCenter.default.addObserver(context.coordinator,
+                                               selector: #selector(Coordinator.didScroll(_:)),
+                                               name: NSView.boundsDidChangeNotification,
+                                               object: scrollView.contentView)
 
         return scrollView
     }
 
     public func updateNSView(_ nsView: NSScrollView, context: Context) {
         guard let textView = nsView.documentView as? NSTextView else { return }
+        context.coordinator.parent = self
+
+        let font = Self.editorFont(size: fontSize)
+        if textView.font != font { textView.font = font }
+        context.coordinator.setHighlighting(highlighting)
+        context.coordinator.setLineNumbers(lineNumbers, fontSize: fontSize)
 
         // 只在「外部变更」时回灌：正在编辑 / 正在用输入法组字时绝不打断
         guard textView.string != text else { return }
@@ -76,9 +90,14 @@ public struct NativeEditorView: NSViewRepresentable {
         if !clamped.isEmpty {
             textView.selectedRanges = clamped
         }
-        if Self.sourceHighlightingEnabled {
+        if highlighting {
             context.coordinator.recomputeTokens(for: text)
         }
+        context.coordinator.ruler?.textDidChange()
+    }
+
+    public static func dismantleNSView(_ nsView: NSScrollView, coordinator: Coordinator) {
+        NotificationCenter.default.removeObserver(coordinator)
     }
 
     @MainActor
@@ -106,18 +125,72 @@ public struct NativeEditorView: NSViewRepresentable {
 
         public func textDidChange(_ notification: Notification) {
             guard let tv = notification.object as? NSTextView else { return }
+            ruler?.textDidChange()
             // 组字未提交时不写回，避免拼音输入被打断
             if tv.hasMarkedText() { return }
             let newText = tv.string
             if parent.text != newText {
                 parent.text = newText
             }
-            if NativeEditorView.sourceHighlightingEnabled {
+            if highlightingOn {
                 scheduleRehighlight(for: newText)
             }
         }
 
+        // MARK: - 行号
+
+        private(set) var ruler: LineNumberRulerView?
+
+        func setLineNumbers(_ on: Bool, fontSize: CGFloat) {
+            guard let tv = textView, let scrollView = tv.enclosingScrollView else { return }
+            if on, ruler == nil {
+                let r = LineNumberRulerView(textView: tv)
+                scrollView.verticalRulerView = r
+                scrollView.hasVerticalRuler = true
+                scrollView.rulersVisible = true
+                ruler = r
+            } else if !on, ruler != nil {
+                scrollView.rulersVisible = false
+                scrollView.hasVerticalRuler = false
+                scrollView.verticalRulerView = nil
+                ruler = nil
+            }
+            ruler?.setFontSize(fontSize)
+        }
+
+        public func textViewDidChangeSelection(_ notification: Notification) {
+            ruler?.needsDisplay = true
+        }
+
+        @objc func didScroll(_ note: Notification) {
+            ruler?.needsDisplay = true
+        }
+
         // MARK: - 源码着色
+
+        private(set) var highlightingOn = false
+
+        /// 开 / 关源码着色：装上或卸下 TextKit 2 的显示层属性验证器
+        func setHighlighting(_ on: Bool) {
+            guard on != highlightingOn, let tv = textView, let tlm = tv.textLayoutManager else { return }
+            highlightingOn = on
+            if on {
+                tlm.renderingAttributesValidator = { [weak self] tlm, fragment in
+                    MainActor.assumeIsolated {
+                        self?.applyRenderingAttributes(tlm, fragment)
+                    }
+                }
+                recomputeTokens(for: tv.string)
+            } else {
+                rehighlightTask?.cancel()
+                tlm.renderingAttributesValidator = nil
+                tokens = []
+                // 清掉已画上的颜色
+                tlm.removeRenderingAttribute(.foregroundColor, for: tlm.documentRange)
+                tlm.removeRenderingAttribute(.strikethroughStyle, for: tlm.documentRange)
+                tv.needsDisplay = true
+            }
+        }
 
         func recomputeTokens(for text: String) {
             tokens = MarkdownSourceHighlighter.tokens(in: text)

@@ -1,4 +1,4 @@
-import SwiftUI
+import Foundation
 import Markdown
 
 /// 解析结果模型
@@ -86,9 +86,10 @@ public struct MarkdownASTParser: Sendable {
         switch markup {
         case let heading as Markdown.Heading:
             headingCounter += 1
-            let titleText = heading.plainText.trimmingCharacters(in: .whitespacesAndNewlines)
             let anchorId = "heading-\(headingCounter)"
-            let attributed = AttributedStringBuilder.build(from: heading, baseFont: headingBaseFont(level: heading.level))
+            let attributed = AttributedStringBuilder.build(from: heading)
+            // 用渲染后的文字做标题（plainText 会保留行内代码的反引号、==高亮== 标记）
+            let titleText = String(attributed.characters).trimmingCharacters(in: .whitespacesAndNewlines)
             if collectTOC {
                 tocList.append(TOCItem(id: anchorId, level: heading.level, title: titleText))
             }
@@ -202,16 +203,6 @@ public struct MarkdownASTParser: Sendable {
         return .image(id: idGen.next(), source: image.source, alt: alt)
     }
 
-    private static func headingBaseFont(level: Int) -> Font {
-        switch level {
-        case 1: return .system(size: 26, weight: .bold)
-        case 2: return .system(size: 21, weight: .semibold)
-        case 3: return .system(size: 17, weight: .medium)
-        case 4: return .system(size: 15, weight: .medium)
-        case 5: return .system(size: 14, weight: .regular)
-        default: return .system(size: 13, weight: .regular)
-        }
-    }
 
     // MARK: - TOC 层级
 

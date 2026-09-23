@@ -7,6 +7,9 @@ public struct MainDocumentView: View {
     public var fileURL: URL?
 
     @StateObject private var state = EditorState()
+    @AppStorage(PrefKey.fontSize) private var fontSize = Double(ReaderStyle.default.fontSize)
+    @AppStorage(PrefKey.editorHighlighting) private var editorHighlighting = false
+    @AppStorage(PrefKey.editorLineNumbers) private var editorLineNumbers = true
     @State private var parsedDoc = ParsedDocument()
     @State private var parseTask: Task<Void, Never>?
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
@@ -124,7 +127,10 @@ public struct MainDocumentView: View {
     }
 
     private var editor: some View {
-        NativeEditorView(text: $document.text)
+        NativeEditorView(text: $document.text,
+                         fontSize: max(10, CGFloat(fontSize) - 1.5),
+                         highlighting: editorHighlighting,
+                         lineNumbers: editorLineNumbers)
     }
 
     private var fileMissingBanner: some View {

@@ -10,6 +10,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.activate(ignoringOtherApps: true)
 
         MarkdownASTParser.prewarm()
+        ThemeController.shared.start()
     }
 }
 
@@ -30,7 +31,8 @@ struct MDPreviewApp: App {
             ToolbarCommands()
             TextEditingCommands()
 
-            CommandMenu(L.menuView) {
+            // 并进系统自带的「显示 / View」菜单，不再另开一个同名菜单
+            CommandGroup(before: .sidebar) {
                 Button(L.readingMode) { editorState?.setViewMode(.reading) }
                     .keyboardShortcut("r", modifiers: .command)
                     .disabled(editorState == nil)
@@ -48,6 +50,17 @@ struct MDPreviewApp: App {
                 }
                 .keyboardShortcut("s", modifiers: [.command, .option])
                 .disabled(editorState == nil)
+
+                Divider()
+
+                Button(L.zoomIn) { FontZoom.increase() }
+                    .keyboardShortcut("=", modifiers: .command)
+                Button(L.zoomOut) { FontZoom.decrease() }
+                    .keyboardShortcut("-", modifiers: .command)
+                Button(L.actualSize) { FontZoom.reset() }
+                    .keyboardShortcut("0", modifiers: .command)
+
+                Divider()
             }
 
             CommandGroup(replacing: .printItem) {
@@ -63,6 +76,10 @@ struct MDPreviewApp: App {
                 .keyboardShortcut("p", modifiers: [.command, .option])
                 .disabled(printable == nil)
             }
+        }
+
+        Settings {
+            PreferencesView()
         }
     }
 }

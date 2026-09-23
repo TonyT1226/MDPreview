@@ -33,6 +33,8 @@ public struct FloatingStatusCapsule: View {
             withAnimation(.easeInOut(duration: 0.15)) { isHovered = hovering }
         }
         .help(L.lineCount(stats.lineCount))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(L.statusAccessibilityLabel(words: stats.wordCount, lines: stats.lineCount))
         .padding(.trailing, 16)
         .padding(.bottom, 12)
     }

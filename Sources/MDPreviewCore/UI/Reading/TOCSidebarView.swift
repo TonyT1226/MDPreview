@@ -53,6 +53,7 @@ public struct TOCSidebarView: View {
                     .padding(.horizontal, 8)
                     .padding(.vertical, 8)
                 }
+                .accessibilityLabel(L.outlineTitle)
             }
         }
         .frame(minWidth: 180, maxWidth: .infinity)
@@ -71,6 +72,7 @@ struct TOCItemRow: View {
     var activeId: String?
     @State private var isExpanded: Bool = true
     @State private var isHovered: Bool = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var isSelected: Bool {
         activeId == item.id || (activeId == nil && targetScrollId == item.id)
@@ -88,7 +90,7 @@ struct TOCItemRow: View {
                 // 旋转展开折叠小箭头
                 if !item.children.isEmpty {
                     Button(action: {
-                        withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+                        withAnimation(reduceMotion ? nil : .spring(response: 0.25, dampingFraction: 0.8)) {
                             isExpanded.toggle()
                         }
                     }) {
@@ -100,15 +102,14 @@ struct TOCItemRow: View {
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(isExpanded ? L.collapseSection : L.expandSection)
                 } else {
                     Spacer().frame(width: 16)
                 }
 
                 // 标题文本按钮
                 Button(action: {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        targetScrollId = item.id
-                    }
+                    targetScrollId = item.id
                 }) {
                     HStack(spacing: 4) {
                         Text(item.title)
@@ -123,13 +124,15 @@ struct TOCItemRow: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(L.headingAccessibilityLabel(item.level, title: item.title))
+                .accessibilityAddTraits(isSelected ? .isSelected : [])
             }
             .background(
                 RoundedRectangle(cornerRadius: 6, style: .continuous)
                     .fill(backgroundColor)
             )
             .onHover { hovering in
-                withAnimation(.easeInOut(duration: 0.12)) {
+                withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.12)) {
                     isHovered = hovering
                 }
             }

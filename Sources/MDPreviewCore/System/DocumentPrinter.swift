@@ -16,12 +16,10 @@ public struct PrintableDocument: Sendable {
 
 /// 把阅读视图渲染成矢量 PDF —— 打印与「导出为 PDF…」共用一条 `NSPrintOperation` 路径。
 ///
-/// 分页在**块边界**上断（逐块量高度后贪心装页），不会把代码块 / 表格拦腰截断。
-/// 单个块高于一页时任其溢出（少见）。
+/// 与屏幕阅读区用同一个 `ReaderRenderer`，排进一个离屏的只读 `NSTextView`，由它按行分页。
+/// 始终用浅色外观，暗色模式下打出来也是白底黑字。
 @MainActor
 public enum DocumentPrinter {
-
-    private static let blockSpacing: CGFloat = 14
 
     public static func runPrintPanel(_ doc: PrintableDocument) {
         let info = NSPrintInfo.shared.copy() as! NSPrintInfo
@@ -52,94 +50,41 @@ public enum DocumentPrinter {
 
     // MARK: -
 
-    private static func makeView(_ doc: PrintableDocument, printInfo: NSPrintInfo) -> PrintableDocumentView? {
+    private static func makeView(_ doc: PrintableDocument, printInfo: NSPrintInfo) -> NSView? {
         guard !doc.parsed.blocks.isEmpty else { return nil }
+        printInfo.horizontalPagination = .fit
+        printInfo.verticalPagination = .automatic
+        printInfo.isVerticallyCentered = false
+        printInfo.isHorizontallyCentered = false
 
         let contentWidth = printInfo.paperSize.width - printInfo.leftMargin - printInfo.rightMargin
-        let contentHeight = printInfo.paperSize.height - printInfo.topMargin - printInfo.bottomMargin
-        guard contentWidth > 0, contentHeight > 0 else { return nil }
-
-        let context = MarkdownRenderContext(baseURL: doc.baseURL)
-
-        return PrintableDocumentView(blocks: doc.parsed.blocks,
-                                     context: context,
-                                     contentSize: NSSize(width: contentWidth, height: contentHeight),
-                                     blockSpacing: blockSpacing)
+        guard contentWidth > 0 else { return nil }
+        return textView(for: doc, width: contentWidth, style: printStyle())
     }
 
-    #if DEBUG
-    /// 测试用：按给定页面尺寸构建分页视图
-    static func paginatedViewForTesting(_ doc: PrintableDocument, pageSize: NSSize) -> PrintableDocumentView {
-        let context = MarkdownRenderContext(baseURL: doc.baseURL)
-        return PrintableDocumentView(blocks: doc.parsed.blocks,
-                                     context: context,
-                                     contentSize: pageSize,
-                                     blockSpacing: blockSpacing)
+    /// 打印用的排版：沿用字体与行距偏好，字号封顶 14，避免纸面过于稀疏
+    private static func printStyle() -> ReaderStyle {
+        var style = ReaderStyle.current()
+        style.fontSize = min(style.fontSize, 14)
+        return style
     }
-    #endif
-}
 
-/// 承载逐块子视图并按块边界分页的打印视图
-final class PrintableDocumentView: NSView {
+    static func textView(for doc: PrintableDocument, width: CGFloat, style: ReaderStyle) -> NSTextView {
+        let renderer = ReaderRenderer(style: style, baseURL: doc.baseURL, imageProvider: RemoteImageCache.shared)
+        let rendered = renderer.render(doc.parsed.blocks)
 
-    private let pageContentSize: NSSize
-    private var pageRects: [NSRect] = []
-
-    /// 分页出来的页数（供测试）
-    var pageCount: Int { max(1, pageRects.count) }
-
-    init(blocks: [MarkdownBlock],
-         context: MarkdownRenderContext,
-         contentSize: NSSize,
-         blockSpacing: CGFloat) {
-        self.pageContentSize = contentSize
-        super.init(frame: NSRect(origin: .zero, size: NSSize(width: contentSize.width, height: contentSize.height)))
-
-        let light = NSAppearance(named: .aqua)
-        var y: CGFloat = 0
-        var pageStartY: CGFloat = 0
-        var pageBreaks: [CGFloat] = [0]
-
-        for block in blocks {
-            let host = NSHostingView(rootView:
-                MarkdownBlockDispatcher(block: block)
-                    .environment(\.markdownContext, context)
-                    .frame(width: contentSize.width, alignment: .leading)
-            )
-            host.appearance = light
-            let h = host.fittingSize.height
-            host.frame = NSRect(x: 0, y: y, width: contentSize.width, height: h)
-
-            // 这一块放不下当前页 → 起新页（当前页非空时）
-            if y - pageStartY + h > contentSize.height, y > pageStartY {
-                pageStartY = y
-                pageBreaks.append(y)
-            }
-            addSubview(host)
-            y += h + blockSpacing
+        let tv = ReaderTextView.make()
+        tv.appearance = NSAppearance(named: .aqua)
+        tv.backgroundColor = .white
+        tv.autoInsets = false
+        tv.textContainerInset = .zero
+        tv.frame = NSRect(x: 0, y: 0, width: width, height: 100)
+        tv.textStorage?.setAttributedString(rendered.text)
+        if let lm = tv.layoutManager, let tc = tv.textContainer {
+            lm.ensureLayout(for: tc)
+            let used = lm.usedRect(for: tc)
+            tv.setFrameSize(NSSize(width: width, height: ceil(used.height) + 1))
         }
-
-        let totalHeight = max(y, contentSize.height)
-        setFrameSize(NSSize(width: contentSize.width, height: totalHeight))
-
-        pageRects = pageBreaks.enumerated().map { idx, top in
-            NSRect(x: 0, y: top, width: contentSize.width, height: contentSize.height)
-        }
-    }
-
-    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
-
-    override var isFlipped: Bool { true }
-
-    override func knowsPageRange(_ range: NSRangePointer) -> Bool {
-        range.pointee = NSRange(location: 1, length: max(1, pageRects.count))
-        return true
-    }
-
-    override func rectForPage(_ page: Int) -> NSRect {
-        guard pageRects.indices.contains(page - 1) else {
-            return NSRect(origin: .zero, size: pageContentSize)
-        }
-        return pageRects[page - 1]
+        return tv
     }
 }
