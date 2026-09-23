@@ -8,6 +8,7 @@ public struct PreferencesView: View {
     @AppStorage(PrefKey.fontFamily) private var fontFamily = ReaderStyle.default.fontFamily.rawValue
     @AppStorage(PrefKey.theme) private var theme = AppTheme.system.rawValue
     @AppStorage(PrefKey.editorHighlighting) private var editorHighlighting = false
+    @AppStorage(PrefKey.editorLineNumbers) private var editorLineNumbers = true
 
     public init() {}
 
@@ -61,6 +62,7 @@ public struct PreferencesView: View {
             }
 
             Section(L.prefsEditor) {
+                Toggle(L.prefsLineNumbers, isOn: $editorLineNumbers)
                 Toggle(L.prefsSourceHighlighting, isOn: $editorHighlighting)
                 Text(L.prefsSourceHighlightingHint)
                     .font(.caption)
@@ -87,5 +89,6 @@ public struct PreferencesView: View {
         fontFamily = d.fontFamily.rawValue
         theme = AppTheme.system.rawValue
         editorHighlighting = false
+        editorLineNumbers = true
     }
 }

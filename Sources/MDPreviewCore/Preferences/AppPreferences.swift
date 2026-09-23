@@ -9,6 +9,7 @@ public enum PrefKey {
     public static let fontFamily = "reader.fontFamily"
     public static let theme = "app.theme"
     public static let editorHighlighting = "editor.sourceHighlighting"
+    public static let editorLineNumbers = "editor.lineNumbers"
 }
 
 public enum ReaderFontFamily: String, CaseIterable, Identifiable, Sendable {

@@ -62,4 +62,42 @@ struct SnapshotTests {
         NSGraphicsContext.restoreGraphicsState()
         try rep.representation(using: .png, properties: [:])!.write(to: dir.appendingPathComponent("thumbnail.png"))
     }
+
+    @Test("渲染编辑器行号快照", .enabled(if: ProcessInfo.processInfo.environment["MDP_SNAPSHOT_DIR"] != nil))
+    func renderEditor() throws {
+        let dir = URL(fileURLWithPath: ProcessInfo.processInfo.environment["MDP_SNAPSHOT_DIR"]!)
+        let source = #filePath.replacingOccurrences(of: "Tests/MDPreviewCoreTests/SnapshotTests.swift", with: "SampleDocument.md")
+        let md = try String(contentsOfFile: source, encoding: .utf8)
+
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 700, height: 500),
+                              styleMask: [.titled], backing: .buffered, defer: false)
+        let scrollView = NSTextView.scrollableTextView()
+        scrollView.frame = window.contentView!.bounds
+        window.contentView!.addSubview(scrollView)
+        let tv = scrollView.documentView as! NSTextView
+        tv.font = NativeEditorView.editorFont(size: 13.5)
+        tv.textContainerInset = NSSize(width: 24, height: 20)
+        tv.string = md + "\n"
+        let ruler = LineNumberRulerView(textView: tv)
+        scrollView.verticalRulerView = ruler
+        scrollView.hasVerticalRuler = true
+        scrollView.rulersVisible = true
+        ruler.setFontSize(13.5)
+        tv.setSelectedRange(NSRange(location: 40, length: 0))
+        scrollView.layoutSubtreeIfNeeded()
+        tv.textLayoutManager?.ensureLayout(for: tv.textLayoutManager!.documentRange)
+
+        #expect(tv.textLayoutManager != nil, "加了行号栏后仍是 TextKit 2")
+
+        let rep = scrollView.bitmapImageRepForCachingDisplay(in: scrollView.bounds)!
+        scrollView.cacheDisplay(in: scrollView.bounds, to: rep)
+        try rep.representation(using: .png, properties: [:])!.write(to: dir.appendingPathComponent("editor.png"))
+
+        // 滚到末尾再拍一张，看文末空行的行号
+        tv.scrollToEndOfDocument(nil)
+        scrollView.layoutSubtreeIfNeeded()
+        let rep2 = scrollView.bitmapImageRepForCachingDisplay(in: scrollView.bounds)!
+        scrollView.cacheDisplay(in: scrollView.bounds, to: rep2)
+        try rep2.representation(using: .png, properties: [:])!.write(to: dir.appendingPathComponent("editor-end.png"))
+    }
 }

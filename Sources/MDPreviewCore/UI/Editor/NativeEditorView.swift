@@ -10,11 +10,14 @@ public struct NativeEditorView: NSViewRepresentable {
     /// `MarkdownSourceHighlighter` + `renderingAttributesValidator` 走显示层属性，
     /// 不进 undo 栈、不打断输入法。
     public var highlighting: Bool
+    /// 左侧行号栏（光标所在行加深）
+    public var lineNumbers: Bool
 
-    public init(text: Binding<String>, fontSize: CGFloat = 13.5, highlighting: Bool = false) {
+    public init(text: Binding<String>, fontSize: CGFloat = 13.5, highlighting: Bool = false, lineNumbers: Bool = true) {
         self._text = text
         self.fontSize = fontSize
         self.highlighting = highlighting
+        self.lineNumbers = lineNumbers
     }
 
     static func editorFont(size: CGFloat) -> NSFont {
@@ -51,7 +54,14 @@ public struct NativeEditorView: NSViewRepresentable {
         context.coordinator.textView = textView
 
         context.coordinator.setHighlighting(highlighting)
+        context.coordinator.setLineNumbers(lineNumbers, fontSize: fontSize)
         textView.setAccessibilityLabel(L.editorAccessibilityLabel)
+
+        scrollView.contentView.postsBoundsChangedNotifications = true
+        NotificationCenter.default.addObserver(context.coordinator,
+                                               selector: #selector(Coordinator.didScroll(_:)),
+                                               name: NSView.boundsDidChangeNotification,
+                                               object: scrollView.contentView)
 
         return scrollView
     }
@@ -63,6 +73,7 @@ public struct NativeEditorView: NSViewRepresentable {
         let font = Self.editorFont(size: fontSize)
         if textView.font != font { textView.font = font }
         context.coordinator.setHighlighting(highlighting)
+        context.coordinator.setLineNumbers(lineNumbers, fontSize: fontSize)
 
         // 只在「外部变更」时回灌：正在编辑 / 正在用输入法组字时绝不打断
         guard textView.string != text else { return }
@@ -82,6 +93,11 @@ public struct NativeEditorView: NSViewRepresentable {
         if highlighting {
             context.coordinator.recomputeTokens(for: text)
         }
+        context.coordinator.ruler?.textDidChange()
+    }
+
+    public static func dismantleNSView(_ nsView: NSScrollView, coordinator: Coordinator) {
+        NotificationCenter.default.removeObserver(coordinator)
     }
 
     @MainActor
@@ -109,6 +125,7 @@ public struct NativeEditorView: NSViewRepresentable {
 
         public func textDidChange(_ notification: Notification) {
             guard let tv = notification.object as? NSTextView else { return }
+            ruler?.textDidChange()
             // 组字未提交时不写回，避免拼音输入被打断
             if tv.hasMarkedText() { return }
             let newText = tv.string
@@ -118,6 +135,35 @@ public struct NativeEditorView: NSViewRepresentable {
             if highlightingOn {
                 scheduleRehighlight(for: newText)
             }
+        }
+
+        // MARK: - 行号
+
+        private(set) var ruler: LineNumberRulerView?
+
+        func setLineNumbers(_ on: Bool, fontSize: CGFloat) {
+            guard let tv = textView, let scrollView = tv.enclosingScrollView else { return }
+            if on, ruler == nil {
+                let r = LineNumberRulerView(textView: tv)
+                scrollView.verticalRulerView = r
+                scrollView.hasVerticalRuler = true
+                scrollView.rulersVisible = true
+                ruler = r
+            } else if !on, ruler != nil {
+                scrollView.rulersVisible = false
+                scrollView.hasVerticalRuler = false
+                scrollView.verticalRulerView = nil
+                ruler = nil
+            }
+            ruler?.setFontSize(fontSize)
+        }
+
+        public func textViewDidChangeSelection(_ notification: Notification) {
+            ruler?.needsDisplay = true
+        }
+
+        @objc func didScroll(_ note: Notification) {
+            ruler?.needsDisplay = true
         }
 
         // MARK: - 源码着色

@@ -79,6 +79,7 @@ public enum L {
     public static let prefsAppearance = String(localized: "prefsAppearance", defaultValue: "Appearance", bundle: .module, comment: "Settings section")
     public static let prefsTheme = String(localized: "prefsTheme", defaultValue: "Theme", bundle: .module, comment: "Settings row")
     public static let prefsEditor = String(localized: "prefsEditor", defaultValue: "Editor", bundle: .module, comment: "Settings section")
+    public static let prefsLineNumbers = String(localized: "prefsLineNumbers", defaultValue: "Show line numbers", bundle: .module, comment: "Settings toggle")
     public static let prefsSourceHighlighting = String(localized: "prefsSourceHighlighting", defaultValue: "Markdown syntax coloring", bundle: .module, comment: "Settings toggle")
     public static let prefsSourceHighlightingHint = String(localized: "prefsSourceHighlightingHint", defaultValue: "Colors headings, emphasis, code, links and other syntax in the editor.", bundle: .module, comment: "Settings hint")
     public static let prefsRestoreDefaults = String(localized: "prefsRestoreDefaults", defaultValue: "Restore Defaults", bundle: .module, comment: "Settings button")
