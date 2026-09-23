@@ -11,6 +11,7 @@ let swiftMarkdownRevision = "27b7fc1a19068bcea3d2072db0ce86360d1400ed"
 
 let package = Package(
     name: "MDPreview",
+    defaultLocalization: "en",
     platforms: [
         .macOS(.v14)
     ],
@@ -29,7 +30,10 @@ let package = Package(
             dependencies: [
                 .product(name: "Markdown", package: "swift-markdown")
             ],
-            path: "Sources/MDPreviewCore"
+            path: "Sources/MDPreviewCore",
+            resources: [
+                .process("Resources/Localizable.xcstrings")
+            ]
         ),
         .testTarget(
             name: "MDPreviewCoreTests",

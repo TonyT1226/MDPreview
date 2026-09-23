@@ -31,7 +31,8 @@ struct MDPreviewApp: App {
             ToolbarCommands()
             TextEditingCommands()
 
-            CommandMenu(L.menuView) {
+            // 并进系统自带的「显示 / View」菜单，不再另开一个同名菜单
+            CommandGroup(before: .sidebar) {
                 Button(L.readingMode) { editorState?.setViewMode(.reading) }
                     .keyboardShortcut("r", modifiers: .command)
                     .disabled(editorState == nil)
@@ -58,6 +59,8 @@ struct MDPreviewApp: App {
                     .keyboardShortcut("-", modifiers: .command)
                 Button(L.actualSize) { FontZoom.reset() }
                     .keyboardShortcut("0", modifiers: .command)
+
+                Divider()
             }
 
             CommandGroup(replacing: .printItem) {
