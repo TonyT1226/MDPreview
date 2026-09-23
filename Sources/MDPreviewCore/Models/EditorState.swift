@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 import Combine
 
 public enum ViewMode: String, CaseIterable, Identifiable, Sendable {
@@ -85,11 +86,16 @@ public final class EditorState: ObservableObject {
     }
 
     public func setViewMode(_ mode: ViewMode) {
-        withAnimation(.easeInOut(duration: 0.18)) { viewMode = mode }
+        withAnimation(Self.reduceMotion ? nil : .easeInOut(duration: 0.18)) { viewMode = mode }
     }
 
     public func toggleTOC() {
-        withAnimation(.smooth(duration: 0.28)) { showTOC.toggle() }
+        withAnimation(Self.reduceMotion ? nil : .smooth(duration: 0.28)) { showTOC.toggle() }
+    }
+
+    /// 系统设置 › 辅助功能 › 显示 › 减少动态效果
+    private static var reduceMotion: Bool {
+        NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
     }
 }
 

@@ -29,6 +29,8 @@ public enum L {
 
     // MARK: - 大纲侧边栏
 
+    public static let expandSection = String(localized: "expandSection", defaultValue: "Expand", bundle: .module, comment: "VoiceOver: expand an outline item")
+    public static let collapseSection = String(localized: "collapseSection", defaultValue: "Collapse", bundle: .module, comment: "VoiceOver: collapse an outline item")
     public static let outlineTitle = String(localized: "outlineTitle", defaultValue: "Outline", bundle: .module, comment: "Sidebar header")
     public static let outlineEmpty = String(localized: "outlineEmpty", defaultValue: "No headings in this document", bundle: .module, comment: "Sidebar empty state")
 
@@ -97,6 +99,12 @@ public enum L {
     }
     public static func imagePlaceholderWithAlt(_ message: String, alt: String) -> String {
         String(localized: "imagePlaceholderWithAlt", defaultValue: "\(message): \(alt)", bundle: .module, comment: "Image placeholder message followed by alt text")
+    }
+    public static func headingAccessibilityLabel(_ level: Int, title: String) -> String {
+        String(localized: "headingAccessibilityLabel", defaultValue: "Heading level \(level), \(title)", bundle: .module, comment: "VoiceOver label of an outline item")
+    }
+    public static func statusAccessibilityLabel(words: Int, lines: Int) -> String {
+        String(localized: "statusAccessibilityLabel", defaultValue: "\(words) words, \(lines) lines", bundle: .module, comment: "VoiceOver label of the word-count pill")
     }
     static let exportPDFDocumentStem = String(localized: "exportPDFDocumentStem", defaultValue: "Document", bundle: .module, comment: "Default PDF file name when the document has no title")
 

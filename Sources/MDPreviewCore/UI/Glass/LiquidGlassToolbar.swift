@@ -12,13 +12,14 @@ public struct NativeUnifiedToolbar: ToolbarContent {
         // 正中间：紧凑精巧的原生分段模式控制器
         // （左侧侧边栏开关由 NavigationSplitView 原生自动提供，无需重复添加）
         ToolbarItem(placement: .principal) {
-            Picker("", selection: $state.viewMode) {
+            Picker(L.switchViewModeHelp, selection: $state.viewMode) {
                 ForEach(ViewMode.allCases) { mode in
                     Label(mode.title, systemImage: mode.icon)
                         .tag(mode)
                 }
             }
             .pickerStyle(.segmented)
+            .labelsHidden()
             .frame(width: 140)
             .help(L.switchViewModeHelp)
             .animation(.easeInOut(duration: 0.18), value: state.viewMode)

@@ -19,6 +19,24 @@
         }
       }
     },
+    "collapseSection": {
+      "comment": "VoiceOver: collapse an outline item",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Collapse"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "折叠"
+          }
+        }
+      }
+    },
     "editingMode": {
       "comment": "View menu item",
       "extractionState": "manual",
@@ -69,6 +87,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "空白文档"
+          }
+        }
+      }
+    },
+    "expandSection": {
+      "comment": "VoiceOver: expand an outline item",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Expand"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "展开"
           }
         }
       }
@@ -231,6 +267,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "系统字体"
+          }
+        }
+      }
+    },
+    "headingAccessibilityLabel": {
+      "comment": "VoiceOver label of an outline item",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heading level %1$lld, %2$@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld 级标题，%2$@"
           }
         }
       }
@@ -777,6 +831,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "分屏模式"
+          }
+        }
+      }
+    },
+    "statusAccessibilityLabel": {
+      "comment": "VoiceOver label of the word-count pill",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld words, %2$lld lines"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld 字，%2$lld 行"
           }
         }
       }

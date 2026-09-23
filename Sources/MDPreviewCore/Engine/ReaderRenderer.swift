@@ -329,11 +329,16 @@ public struct ReaderRenderer {
     // MARK: 代码块
 
     /// NSTextBlock 画边框时不理会颜色的透明度，所以边框用不透明的灰
+    /// 「增强对比度」打开时（系统设置 › 辅助功能 › 显示）边框和底色都加深
     static let borderColor = NSColor.dynamic(light: NSColor(white: 0.86, alpha: 1),
-                                             dark: NSColor(white: 0.28, alpha: 1))
+                                             dark: NSColor(white: 0.28, alpha: 1),
+                                             highContrastLight: NSColor(white: 0.45, alpha: 1),
+                                             highContrastDark: NSColor(white: 0.7, alpha: 1))
 
     static let codeBackground = NSColor.dynamic(light: NSColor(white: 0, alpha: 0.035),
-                                                dark: NSColor(white: 1, alpha: 0.06))
+                                                dark: NSColor(white: 1, alpha: 0.06),
+                                                highContrastLight: NSColor(white: 0, alpha: 0.08),
+                                                highContrastDark: NSColor(white: 1, alpha: 0.14))
 
     private func renderCode(_ highlighted: AttributedString, ctx: Context, into state: inout State) {
         let box = fullWidthBlock()
@@ -558,9 +563,17 @@ extension NSColor {
         NSColor(name: nil) { _ in base.withAlphaComponent(alpha) }
     }
 
-    static func dynamic(light: NSColor, dark: NSColor) -> NSColor {
+    static func dynamic(light: NSColor, dark: NSColor,
+                        highContrastLight: NSColor? = nil, highContrastDark: NSColor? = nil) -> NSColor {
         NSColor(name: nil) { appearance in
-            appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? dark : light
+            switch appearance.bestMatch(from: [.aqua, .darkAqua,
+                                               .accessibilityHighContrastAqua,
+                                               .accessibilityHighContrastDarkAqua]) {
+            case .accessibilityHighContrastDarkAqua: return highContrastDark ?? dark
+            case .accessibilityHighContrastAqua: return highContrastLight ?? light
+            case .darkAqua: return dark
+            default: return light
+            }
         }
     }
 }

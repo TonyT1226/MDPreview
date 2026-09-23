@@ -171,7 +171,7 @@ struct ReaderTextRepresentable: NSViewRepresentable {
             let clip = scrollView.contentView
             let maxY = max(0, textView.frame.height - clip.bounds.height)
             let target = NSPoint(x: 0, y: min(max(0, rect.minY - 12), maxY))
-            if animated {
+            if animated && !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
                 NSAnimationContext.runAnimationGroup { ctx in
                     ctx.duration = 0.25
                     clip.animator().setBoundsOrigin(target)
