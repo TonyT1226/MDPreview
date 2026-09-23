@@ -16,7 +16,7 @@ struct DocumentPrinterTests {
     @Test("长文档排出的打印视图高于多页纸")
     func longDocumentSpansPages() {
         let doc = longDocument(paragraphs: 60)
-        let view = DocumentPrinter.textViewForTesting(doc, width: 468)
+        let view = DocumentPrinter.textView(for: doc, width: 468, style: .default)
         #expect(view.frame.width == 468)
         #expect(view.frame.height > 300 * 3)
         #expect(view.string.contains("第 60 段"))

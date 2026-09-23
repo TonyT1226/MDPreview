@@ -87,11 +87,4 @@ public enum DocumentPrinter {
         }
         return tv
     }
-
-    #if DEBUG
-    /// 测试用：按给定宽度构建打印视图
-    static func textViewForTesting(_ doc: PrintableDocument, width: CGFloat) -> NSTextView {
-        textView(for: doc, width: width, style: .default)
-    }
-    #endif
 }

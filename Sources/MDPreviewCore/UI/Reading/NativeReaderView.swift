@@ -154,8 +154,11 @@ struct ReaderTextRepresentable: NSViewRepresentable {
                 return NSValue(range: NSRange(location: r.location, length: min(r.length, length - r.location)))
             }
             textView.selectedRanges = clamped.isEmpty ? [NSValue(range: NSRange(location: 0, length: 0))] : clamped
-            if let scrollView {
-                textView.layoutManager?.ensureLayout(for: textView.textContainer!)
+            if let scrollView, let lm = textView.layoutManager, let tc = textView.textContainer {
+                // 只排到原视口底部，够恢复滚动位置即可；其余部分交给后台布局
+                let needed = NSRect(x: 0, y: 0, width: tc.size.width,
+                                    height: origin.y + scrollView.contentView.bounds.height)
+                lm.ensureLayout(forBoundingRect: needed, in: tc)
                 scrollView.contentView.scroll(to: origin)
                 scrollView.reflectScrolledClipView(scrollView.contentView)
             }
@@ -346,7 +349,7 @@ final class ReaderTextView: NSTextView {
         super.mouseDown(with: event)
     }
 
-    private func taskCheckbox(at point: NSPoint) -> (Int, Bool)? {
+    func taskCheckbox(at point: NSPoint) -> (Int, Bool)? {
         guard let layoutManager, let textContainer, let storage = textStorage, storage.length > 0 else { return nil }
         let local = NSPoint(x: point.x - textContainerOrigin.x, y: point.y - textContainerOrigin.y)
         var fraction: CGFloat = 0
