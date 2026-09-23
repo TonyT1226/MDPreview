@@ -62,3 +62,38 @@ struct LocalizationTests {
         #expect(L.exportPDFDefaultName(title: "").hasSuffix(".pdf"))
     }
 }
+
+@Suite("本地化守卫")
+struct HardcodedStringGuard {
+
+    /// 源码里不得出现含中日韩字符的字符串字面量（注释、`#if DEBUG` 预览、`Strings.swift` 除外）。
+    /// 面向用户的文字一律走 `L` + String Catalog。
+    @Test("Sources 里没有硬编码的中日韩字符串")
+    func noHardcodedCJKStrings() throws {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("Sources")
+        let files = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil)!
+            .compactMap { $0 as? URL }
+            .filter { $0.pathExtension == "swift" && $0.lastPathComponent != "Strings.swift" }
+        #expect(!files.isEmpty)
+
+        var offenders: [String] = []
+        for file in files {
+            let lines = try String(contentsOf: file, encoding: .utf8).components(separatedBy: "\n")
+            var inDebug = false
+            for (i, raw) in lines.enumerated() {
+                let trimmed = raw.trimmingCharacters(in: .whitespaces)
+                if trimmed.hasPrefix("#if DEBUG") { inDebug = true; continue }
+                if inDebug { if trimmed.hasPrefix("#endif") { inDebug = false }; continue }
+                let code = raw.components(separatedBy: "//").first ?? raw
+                for match in code.matches(of: /"([^"\\]|\\.)*"/) {
+                    if match.0.unicodeScalars.contains(where: { (0x3040...0x9FFF).contains($0.value) || (0xAC00...0xD7AF).contains($0.value) }) {
+                        offenders.append("\(file.lastPathComponent):\(i + 1): \(match.0)")
+                    }
+                }
+            }
+        }
+        #expect(offenders.isEmpty, "\(offenders.joined(separator: "\n"))")
+    }
+}
