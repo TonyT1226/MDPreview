@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-# 打包 MDPreview.app 与 MDPreview.dmg
+# 打包 MDPreview.app 与 MDPreview-<版本号>.dmg
 # 依赖：完整版 Xcode、xcodegen
 #
 # 说明：仓库通常放在 iCloud / 文件提供程序同步的目录里，构建产物会被打上
@@ -11,8 +11,8 @@ set -euo pipefail
 #
 # 正式分发（需要 Apple Developer 账号）：
 #   在 project.yml 设 DEVELOPMENT_TEAM，改用 Developer ID 签名后：
-#     xcrun notarytool submit MDPreview.dmg --keychain-profile "AC_PASSWORD" --wait
-#     xcrun stapler staple MDPreview.dmg
+#     xcrun notarytool submit MDPreview-<版本号>.dmg --keychain-profile "AC_PASSWORD" --wait
+#     xcrun stapler staple MDPreview-<版本号>.dmg
 
 APP_NAME="MDPreview"
 REPO_ROOT="$(cd "$(dirname "$0")" && pwd)"
@@ -64,10 +64,11 @@ DMG_SRC="$STAGE/dmg"
 mkdir -p "$DMG_SRC"
 ditto "$STAGE/${APP_NAME}.app" "$DMG_SRC/${APP_NAME}.app"
 ln -s /Applications "$DMG_SRC/Applications"
-rm -f "$REPO_ROOT/${APP_NAME}.dmg"
-hdiutil create -volname "${APP_NAME} ${VERSION}" -srcfolder "$DMG_SRC" -ov -format UDZO "$REPO_ROOT/${APP_NAME}.dmg"
+DMG="$REPO_ROOT/${APP_NAME}-${VERSION}.dmg"
+rm -f "$DMG"
+hdiutil create -volname "${APP_NAME} ${VERSION}" -srcfolder "$DMG_SRC" -ov -format UDZO "$DMG"
 
 echo
-echo "✅ 完成：$REPO_ROOT/${APP_NAME}.dmg"
-shasum -a 256 "$REPO_ROOT/${APP_NAME}.dmg"
+echo "✅ 完成：$DMG"
+shasum -a 256 "$DMG"
 echo "   （DMG 不进 git，作为 GitHub Release 附件分发）"

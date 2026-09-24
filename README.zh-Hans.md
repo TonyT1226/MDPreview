@@ -70,7 +70,7 @@ DMG 仍是 ad-hoc 签名，没有公证（需要 Apple Developer 账号），首
 
 ## 安装
 
-从 [Releases](https://github.com/TonyT1226/MDPreview/releases) 下载 `MDPreview.dmg`，
+从 [Releases](https://github.com/TonyT1226/MDPreview/releases) 下载 `MDPreview-<版本号>.dmg`（如 `MDPreview-1.3.0.dmg`），
 把 `MDPreview.app` 拖进「应用程序」。首次打开需要右键 › 打开（没有公证）。
 
 Finder 预览扩展在 App 放进「应用程序」并打开过一次后生效。

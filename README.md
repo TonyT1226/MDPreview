@@ -75,7 +75,7 @@ Inline images, math, HTML blocks, more accurate code highlighting, more language
 
 ## Install
 
-Download `MDPreview.dmg` from [Releases](https://github.com/TonyT1226/MDPreview/releases)
+Download `MDPreview-<version>.dmg` (for example `MDPreview-1.3.0.dmg`) from [Releases](https://github.com/TonyT1226/MDPreview/releases)
 and drag `MDPreview.app` into Applications. The first time, open it with right-click › Open
 (the app is not notarized).
 
