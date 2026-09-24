@@ -55,6 +55,15 @@ PDF export and printing; reload on external change; all UI text moved to one pla
 The DMG is still ad-hoc signed and not notarized (that needs an Apple Developer account),
 so the first launch needs right-click › Open.
 
+**v1.4 (planned) — editing**
+Formatting shortcuts (`⌘B` / `⌘I` / `⌘K` / `⇧⌘K`); list continuation on Return and Tab indenting;
+pasted or dropped images saved to `assets/`; fenced code blocks colored as a whole, and only lines
+near an edit re-scanned.
+
+**v1.5 (planned)**
+The reading view re-lays out only the changed part of large documents; reloading after an external
+change no longer marks the document as edited.
+
 **Later**
 Inline images, math, HTML blocks, more accurate code highlighting, more languages.
 
