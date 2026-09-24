@@ -76,6 +76,29 @@ struct InlineFormatTests {
         #expect(code("|") == "`|`")
     }
 
+    @Test("跨行加粗 / 斜体：逐行包裹，保留列表、标题、引用前缀；再按一次全部去掉")
+    func multiLine() {
+        #expect(bold("«第一行\n第二行»") == "«**第一行**\n**第二行**»")
+        #expect(bold("«- 项一\n- [ ] 项二\n\n## 标题\n> 引用»") ==
+                "«- **项一**\n- [ ] **项二**\n\n## **标题**\n> **引用**»")
+        #expect(bold("«**甲**\n**乙**»") == "«甲\n乙»")
+        #expect(bold("«**甲**\n乙»") == "«**甲**\n**乙**»")           // 部分已加粗 → 补齐
+        #expect(italic("«a  \nb»") == "«*a*  \n*b*»")                  // 行尾空白留在标记外
+    }
+
+    @Test("选区两端的空白放到标记外")
+    func trimsSelection() {
+        #expect(bold("x« 词 »y") == "x **«词»** y")
+        #expect(bold("«整行\n»下一行") == "**«整行»**\n下一行")
+    }
+
+    @Test("跨行行内代码 → 围栏代码块，再按一次去掉；跨行链接不处理")
+    func multiLineCodeAndLink() {
+        #expect(code("«let a = 1\nlet b = 2»") == "«```\nlet a = 1\nlet b = 2\n```»")
+        #expect(code("«```\nlet a = 1\n```»") == "«let a = 1»")
+        #expect(link("«a\nb»") == nil)
+    }
+
     @Test("链接")
     func links() {
         #expect(link("见 «文档» 说明") == "见 [文档](|) 说明")
@@ -226,5 +249,76 @@ struct EditorIntegrationTests {
         tv.mdToggleBold(nil)
         #expect(tv.string == before)
         _ = window
+    }
+
+    @Test("编辑器用自己的撤销管理器；外部改动也能撤销")
+    func ownUndoManager() {
+        let (tv, c, window) = makeEditor("第一行")
+        #expect(tv.undoManager === c.editorUndoManager)
+        #expect(tv.undoManager !== window.undoManager)
+
+        tv.setSelectedRange(NSRange(location: 3, length: 0))
+        tv.insertText("，续写", replacementRange: NSRange(location: NSNotFound, length: 0))
+        #expect(tv.string == "第一行，续写")
+        tv.breakUndoCoalescing()
+        c.editorUndoManager.undo()
+        #expect(tv.string == "第一行")
+    }
+}
+
+@Suite("编辑器：切换视图后撤销（⌘Z 闪退回归）")
+@MainActor
+struct EditorUndoLifecycleTests {
+    @Test("编辑器被移除后，窗口的撤销栈里不留指向它的记录")
+    func noDanglingUndoAfterEditorRemoved() throws {
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 400, height: 300),
+                              styleMask: [.titled], backing: .buffered, defer: false)
+        var text = "开头"
+        let binding = Binding(get: { text }, set: { text = $0 })
+        let host = NSHostingView(rootView: AnyView(NativeEditorView(text: binding)))
+        window.contentView = host
+        host.layoutSubtreeIfNeeded()
+
+        func findTextView(_ v: NSView) -> NSTextView? {
+            if let tv = v as? NSTextView { return tv }
+            for s in v.subviews { if let tv = findTextView(s) { return tv } }
+            return nil
+        }
+        let tv = try #require(findTextView(host))
+        window.makeFirstResponder(tv)
+        tv.setSelectedRange(NSRange(location: 2, length: 0))
+        tv.insertText("，打字", replacementRange: NSRange(location: NSNotFound, length: 0))
+        tv.breakUndoCoalescing()
+        #expect(text == "开头，打字")
+
+        // 相当于切到阅读模式：编辑器从视图树里拿掉
+        host.rootView = AnyView(Text("reading"))
+        host.layoutSubtreeIfNeeded()
+        RunLoop.main.run(until: Date().addingTimeInterval(0.1))
+
+        #expect(window.undoManager?.canUndo == false)
+        window.undoManager?.undo()   // 修复前这里可能访问已释放的对象
+    }
+}
+
+@Suite("文本差异")
+struct TextDiffTests {
+    @Test("只替换中间变化的一段")
+    func minimalChange() {
+        let c = TextDiff.change(from: "- [ ] 任务\n正文", to: "- [x] 任务\n正文")
+        #expect(c.range == NSRange(location: 3, length: 1))
+        #expect(c.replacement == "x")
+        #expect(TextDiff.change(from: "abc", to: "abc").range.length == 0)
+        #expect(TextDiff.change(from: "", to: "新").replacement == "新")
+        #expect(TextDiff.change(from: "ab", to: "").range == NSRange(location: 0, length: 2))
+    }
+
+    @Test("不把 emoji 的代理对切开")
+    func surrogatePairs() {
+        let old = "a😀b"
+        let new = "a😃b"
+        let c = TextDiff.change(from: old, to: new)
+        #expect((old as NSString).replacingCharacters(in: c.range, with: c.replacement) == new)
+        #expect(c.range.length == 2)
     }
 }

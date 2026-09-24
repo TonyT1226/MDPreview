@@ -86,13 +86,22 @@ public struct NativeEditorView: NSViewRepresentable {
         guard textView.string != text else { return }
         if context.coordinator.isEditing || textView.hasMarkedText() { return }
 
+        // 只替换变化的那一段，并走可撤销的路径：撤销历史里的位置保持有效，
+        // 外部改动（热重载、分屏里勾选任务）本身也能撤销
         let selectedRanges = textView.selectedRanges
-        textView.string = text
+        let change = TextDiff.change(from: textView.string, to: text)
+        if textView.shouldChangeText(in: change.range, replacementString: change.replacement) {
+            textView.replaceCharacters(in: change.range, with: change.replacement)
+            textView.didChangeText()
+        } else {
+            textView.string = text
+            context.coordinator.editorUndoManager.removeAllActions()
+        }
+        let length = textView.string.utf16.count
         let clamped = selectedRanges.compactMap { value -> NSValue? in
             let r = value.rangeValue
-            guard r.location <= textView.string.utf16.count else { return nil }
-            let len = min(r.length, textView.string.utf16.count - r.location)
-            return NSValue(range: NSRange(location: r.location, length: len))
+            guard r.location <= length else { return nil }
+            return NSValue(range: NSRange(location: r.location, length: min(r.length, length - r.location)))
         }
         if !clamped.isEmpty {
             textView.selectedRanges = clamped
@@ -112,6 +121,16 @@ public struct NativeEditorView: NSViewRepresentable {
         var parent: NativeEditorView
         weak var textView: NSTextView?
         private(set) var isEditing = false
+
+        /// 编辑器自己的撤销管理器，与编辑器同生共死。
+        ///
+        /// 不能用窗口 / 文档共用的那个：切换阅读 / 编辑视图时编辑器会被销毁重建，
+        /// 留在共用撤销栈里的记录还指着已释放的文本视图，之后按 ⌘Z 就会崩溃。
+        let editorUndoManager = UndoManager()
+
+        public func undoManager(for view: NSTextView) -> UndoManager? {
+            editorUndoManager
+        }
 
         private var tokens: [MarkdownSourceHighlighter.Token] = []
         private var rehighlightTask: Task<Void, Never>?
@@ -308,9 +327,9 @@ extension NSTextView {
     @objc func mdToggleCode(_ sender: Any?) { applyFormat { MarkdownEditing.toggleInline(.code, text: $0, selection: $1) } }
     @objc func mdInsertLink(_ sender: Any?) { applyFormat { MarkdownEditing.insertLink(text: $0, selection: $1) } }
 
-    private func applyFormat(_ make: (String, NSRange) -> TextEdit) {
-        guard isMarkdownEditor else { NSSound.beep(); return }
-        apply(make(string, selectedRange()))
+    private func applyFormat(_ make: (String, NSRange) -> TextEdit?) {
+        guard isMarkdownEditor, let edit = make(string, selectedRange()) else { NSSound.beep(); return }
+        apply(edit)
     }
 }
 

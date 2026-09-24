@@ -43,9 +43,16 @@ public enum MarkdownEditing {
 
     // MARK: - 快捷格式
 
-    /// 加粗 / 斜体 / 行内代码：有选区则包裹，已包裹则去掉；无选区则插入一对标记，光标放中间
-    public static func toggleInline(_ style: InlineStyle, text: String, selection: NSRange) -> TextEdit {
+    /// 加粗 / 斜体 / 行内代码：有选区则包裹，已包裹则去掉；无选区则插入一对标记，光标放中间。
+    /// 选区跨多行时逐行处理（行内代码则改成围栏代码块），因为这些标记不能跨行。
+    public static func toggleInline(_ style: InlineStyle, text: String, selection rawSelection: NSRange) -> TextEdit {
         let ns = text as NSString
+        let selection = trimmed(rawSelection, in: ns)
+        if ns.substring(with: selection).contains("\n") {
+            return style == .code
+                ? toggleFence(text: ns, selection: selection)
+                : toggleInlinePerLine(style, text: ns, selection: selection)
+        }
         let m = style.marker
         let unit = m.utf16.count
 
@@ -84,9 +91,12 @@ public enum MarkdownEditing {
                         selection: NSRange(location: selection.location + w, length: selection.length))
     }
 
-    /// 链接：选中普通文字 → `[文字]()` 光标进括号；选中网址 → `[](网址)` 光标进方括号；无选区 → `[]()`
-    public static func insertLink(text: String, selection: NSRange) -> TextEdit {
+    /// 链接：选中普通文字 → `[文字]()` 光标进括号；选中网址 → `[](网址)` 光标进方括号；无选区 → `[]()`。
+    /// 选区跨多行时不处理（返回 nil）。
+    public static func insertLink(text: String, selection rawSelection: NSRange) -> TextEdit? {
         let ns = text as NSString
+        let selection = trimmed(rawSelection, in: ns)
+        guard !ns.substring(with: selection).contains("\n") else { return nil }
         let selected = ns.substring(with: selection)
         let trimmed = selected.trimmingCharacters(in: .whitespacesAndNewlines)
         if looksLikeURL(trimmed) {
@@ -97,6 +107,91 @@ public enum MarkdownEditing {
         let caret = selection.location + (replacement as NSString).length - 1
         return TextEdit(range: selection, replacement: replacement,
                         selection: NSRange(location: selection.length == 0 ? selection.location + 1 : caret, length: 0))
+    }
+
+    // MARK: - 跨行格式
+
+    /// 选区两端的空白（含换行）放到标记外面：`**词 **` 这种写法不生效
+    static func trimmed(_ selection: NSRange, in ns: NSString) -> NSRange {
+        guard selection.length > 0 else { return selection }
+        var start = selection.location
+        var end = NSMaxRange(selection)
+        let ws = CharacterSet.whitespacesAndNewlines
+        while start < end, let u = UnicodeScalar(ns.character(at: start)), ws.contains(u) { start += 1 }
+        while end > start, let u = UnicodeScalar(ns.character(at: end - 1)), ws.contains(u) { end -= 1 }
+        // 全是空白时保持原样
+        return start == end ? selection : NSRange(location: start, length: end - start)
+    }
+
+    /// 行首不参与包裹的部分：缩进、引用 `>`、标题 `#`、列表标记（含任务框）
+    private static let linePrefixRegex = try! NSRegularExpression(
+        pattern: #"^[ \t]*(?:>[ \t]?)*[ \t]*(?:#{1,6}[ \t]+|(?:[-*+]|\d{1,9}[.)])[ \t]+(?:\[[ xX]\][ \t]+)?)?[ \t]*"#)
+
+    /// 把一行拆成 (前缀, 正文, 行尾空白)
+    private static func splitLine(_ line: String) -> (prefix: String, body: String, suffix: String) {
+        let ns = line as NSString
+        let m = linePrefixRegex.firstMatch(in: line, range: NSRange(location: 0, length: ns.length))
+        let prefixLength = m?.range.length ?? 0
+        let rest = ns.substring(from: prefixLength)
+        let body = rest.replacingOccurrences(of: #"[ \t]+$"#, with: "", options: .regularExpression)
+        let suffix = String(rest.dropFirst(body.count))
+        return (ns.substring(to: prefixLength), body, suffix)
+    }
+
+    private static func isWrapped(_ body: String, _ style: InlineStyle) -> Bool {
+        let ns = body as NSString
+        let w = style.width
+        guard ns.length > 2 * w else { return false }
+        let lead = run(of: style.marker, in: ns, startingAt: 0)
+        let trail = run(of: style.marker, in: ns, endingAt: ns.length)
+        return hasStyle(style, run: min(lead, trail))
+    }
+
+    /// 选区涉及的整行（不含最后的换行）
+    private static func blockRange(for selection: NSRange, in ns: NSString) -> NSRange {
+        var r = ns.lineRange(for: selection)
+        if r.length > 0, ns.character(at: NSMaxRange(r) - 1) == 0x0A { r.length -= 1 }
+        return r
+    }
+
+    /// 加粗 / 斜体跨行：每个非空行各自包裹；若所有非空行都已包裹则全部去掉
+    private static func toggleInlinePerLine(_ style: InlineStyle, text ns: NSString, selection: NSRange) -> TextEdit {
+        let block = blockRange(for: selection, in: ns)
+        let lines = ns.substring(with: block).components(separatedBy: "\n").map(splitLine)
+        let nonEmpty = lines.filter { !$0.body.isEmpty }
+        let unwrap = !nonEmpty.isEmpty && nonEmpty.allSatisfy { isWrapped($0.body, style) }
+        let marker = String(repeating: String(style.marker), count: style.width)
+
+        let newLines = lines.map { line -> String in
+            guard !line.body.isEmpty else { return line.prefix + line.suffix }
+            var body = line.body
+            if unwrap {
+                body = String(body.dropFirst(style.width).dropLast(style.width))
+            } else if !isWrapped(body, style) {
+                body = marker + body + marker
+            }
+            return line.prefix + body + line.suffix
+        }
+        let replacement = newLines.joined(separator: "\n")
+        return TextEdit(range: block, replacement: replacement,
+                        selection: NSRange(location: block.location, length: (replacement as NSString).length))
+    }
+
+    /// 行内代码跨行：改成围栏代码块；已是围栏代码块则去掉围栏
+    private static func toggleFence(text ns: NSString, selection: NSRange) -> TextEdit {
+        let block = blockRange(for: selection, in: ns)
+        var lines = ns.substring(with: block).components(separatedBy: "\n")
+        let isFence: (String) -> Bool = { $0.trimmingCharacters(in: .whitespaces).hasPrefix("```") }
+        let replacement: String
+        if lines.count >= 2, isFence(lines.first!), isFence(lines.last!) {
+            lines.removeFirst()
+            lines.removeLast()
+            replacement = lines.joined(separator: "\n")
+        } else {
+            replacement = "```\n" + lines.joined(separator: "\n") + "\n```"
+        }
+        return TextEdit(range: block, replacement: replacement,
+                        selection: NSRange(location: block.location, length: (replacement as NSString).length))
     }
 
     // MARK: - 列表续写
