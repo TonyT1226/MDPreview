@@ -12,12 +12,16 @@ public struct NativeEditorView: NSViewRepresentable {
     public var highlighting: Bool
     /// 左侧行号栏（光标所在行加深）
     public var lineNumbers: Bool
+    /// 文档在磁盘上的位置（粘贴图片时存到它旁边的 assets/）；未保存为 nil
+    public var documentURL: URL?
 
-    public init(text: Binding<String>, fontSize: CGFloat = 13.5, highlighting: Bool = false, lineNumbers: Bool = true) {
+    public init(text: Binding<String>, fontSize: CGFloat = 13.5, highlighting: Bool = false,
+                lineNumbers: Bool = true, documentURL: URL? = nil) {
         self._text = text
         self.fontSize = fontSize
         self.highlighting = highlighting
         self.lineNumbers = lineNumbers
+        self.documentURL = documentURL
     }
 
     static func editorFont(size: CGFloat) -> NSFont {
@@ -27,7 +31,7 @@ public struct NativeEditorView: NSViewRepresentable {
     public func makeCoordinator() -> Coordinator { Coordinator(self) }
 
     public func makeNSView(context: Context) -> NSScrollView {
-        let scrollView = NSTextView.scrollableTextView()
+        let scrollView = MarkdownTextView.scrollableTextView()
         scrollView.drawsBackground = true
         scrollView.hasVerticalScroller = true
         scrollView.autohidesScrollers = true
@@ -52,6 +56,9 @@ public struct NativeEditorView: NSViewRepresentable {
         textView.string = text
         textView.delegate = context.coordinator
         context.coordinator.textView = textView
+        (textView as? MarkdownTextView)?.documentURL = { [weak coordinator = context.coordinator] in
+            coordinator?.parent.documentURL
+        }
 
         context.coordinator.setHighlighting(highlighting)
         context.coordinator.setLineNumbers(lineNumbers, fontSize: fontSize)

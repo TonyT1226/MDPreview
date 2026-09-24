@@ -131,4 +131,15 @@ struct SnapshotTests {
         host.cacheDisplay(in: host.bounds, to: rep)
         try rep.representation(using: .png, properties: [:])!.write(to: dir.appendingPathComponent("editor-highlight.png"))
     }
+
+    @Test("渲染插入图片说明弹窗", .enabled(if: ProcessInfo.processInfo.environment["MDP_SNAPSHOT_DIR"] != nil))
+    func renderImageNotice() throws {
+        let dir = URL(fileURLWithPath: ProcessInfo.processInfo.environment["MDP_SNAPSHOT_DIR"]!)
+        let alert = MarkdownTextView.imageNoticeAlert(documentURL: URL(fileURLWithPath: "/Users/me/笔记/周报.md"))
+        alert.layout()
+        let view = alert.window.contentView!
+        let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds)!
+        view.cacheDisplay(in: view.bounds, to: rep)
+        try rep.representation(using: .png, properties: [:])!.write(to: dir.appendingPathComponent("image-notice.png"))
+    }
 }

@@ -130,7 +130,8 @@ public struct MainDocumentView: View {
         NativeEditorView(text: $document.text,
                          fontSize: max(10, CGFloat(fontSize) - 1.5),
                          highlighting: editorHighlighting,
-                         lineNumbers: editorLineNumbers)
+                         lineNumbers: editorLineNumbers,
+                         documentURL: fileURL)
     }
 
     private var fileMissingBanner: some View {
