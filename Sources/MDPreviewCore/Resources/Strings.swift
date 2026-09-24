@@ -24,6 +24,11 @@ public enum L {
     public static let zoomIn = String(localized: "zoomIn", defaultValue: "Zoom In", bundle: .module, comment: "View menu item: larger text")
     public static let zoomOut = String(localized: "zoomOut", defaultValue: "Zoom Out", bundle: .module, comment: "View menu item: smaller text")
     public static let actualSize = String(localized: "actualSize", defaultValue: "Actual Size", bundle: .module, comment: "View menu item: default text size")
+    public static let menuFormat = String(localized: "menuFormat", defaultValue: "Format", bundle: .module, comment: "Menu title")
+    public static let formatBold = String(localized: "formatBold", defaultValue: "Bold", bundle: .module, comment: "Format menu item")
+    public static let formatItalic = String(localized: "formatItalic", defaultValue: "Italic", bundle: .module, comment: "Format menu item")
+    public static let formatInlineCode = String(localized: "formatInlineCode", defaultValue: "Inline Code", bundle: .module, comment: "Format menu item")
+    public static let formatLink = String(localized: "formatLink", defaultValue: "Link", bundle: .module, comment: "Format menu item")
     public static let printDocument = String(localized: "printDocument", defaultValue: "Print…", bundle: .module, comment: "File menu item")
     public static let exportPDF = String(localized: "exportPDF", defaultValue: "Export as PDF…", bundle: .module, comment: "File menu item")
 

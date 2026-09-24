@@ -137,6 +137,28 @@ public struct NativeEditorView: NSViewRepresentable {
             }
         }
 
+        // MARK: - 回车 / Tab：列表续写与缩进
+
+        public func textView(_ textView: NSTextView, doCommandBy selector: Selector) -> Bool {
+            // 输入法组字时回车 / Tab 属于输入法，一律不介入
+            guard !textView.hasMarkedText() else { return false }
+            let selection = textView.selectedRange()
+            let edit: TextEdit?
+            switch selector {
+            case #selector(NSResponder.insertNewline(_:)):
+                edit = MarkdownEditing.newline(text: textView.string, selection: selection)
+            case #selector(NSResponder.insertTab(_:)):
+                edit = MarkdownEditing.indent(text: textView.string, selection: selection, outdent: false)
+            case #selector(NSResponder.insertBacktab(_:)):
+                edit = MarkdownEditing.indent(text: textView.string, selection: selection, outdent: true)
+            default:
+                edit = nil
+            }
+            guard let edit else { return false }
+            textView.apply(edit)
+            return true
+        }
+
         // MARK: - 行号
 
         private(set) var ruler: LineNumberRulerView?
@@ -253,5 +275,51 @@ public struct NativeEditorView: NSViewRepresentable {
                 return [.foregroundColor: NSColor.tertiaryLabelColor]
             }
         }
+    }
+}
+
+// MARK: - 应用编辑与快捷格式（经响应链到达当前编辑器）
+
+extension NSTextView {
+
+    /// 以一次可撤销的替换应用编辑，并设置选区
+    func apply(_ edit: TextEdit) {
+        guard shouldChangeText(in: edit.range, replacementString: edit.replacement) else { return }
+        replaceCharacters(in: edit.range, with: edit.replacement)
+        didChangeText()
+        setSelectedRange(edit.selection)
+        scrollRangeToVisible(edit.selection)
+    }
+
+    /// 只对 Markdown 编辑器生效（阅读区、查找栏等其他文本视图也在响应链上）
+    private var isMarkdownEditor: Bool {
+        isEditable && delegate is NativeEditorView.Coordinator && !hasMarkedText()
+    }
+
+    @objc func mdToggleBold(_ sender: Any?) { applyFormat { MarkdownEditing.toggleInline(.bold, text: $0, selection: $1) } }
+    @objc func mdToggleItalic(_ sender: Any?) { applyFormat { MarkdownEditing.toggleInline(.italic, text: $0, selection: $1) } }
+    @objc func mdToggleCode(_ sender: Any?) { applyFormat { MarkdownEditing.toggleInline(.code, text: $0, selection: $1) } }
+    @objc func mdInsertLink(_ sender: Any?) { applyFormat { MarkdownEditing.insertLink(text: $0, selection: $1) } }
+
+    private func applyFormat(_ make: (String, NSRange) -> TextEdit) {
+        guard isMarkdownEditor else { NSSound.beep(); return }
+        apply(make(string, selectedRange()))
+    }
+}
+
+/// 「格式」菜单命令：发给响应链上的第一个编辑器
+@MainActor
+public enum MarkdownFormatCommand {
+    case bold, italic, code, link
+
+    public func send() {
+        let selector: Selector
+        switch self {
+        case .bold: selector = #selector(NSTextView.mdToggleBold(_:))
+        case .italic: selector = #selector(NSTextView.mdToggleItalic(_:))
+        case .code: selector = #selector(NSTextView.mdToggleCode(_:))
+        case .link: selector = #selector(NSTextView.mdInsertLink(_:))
+        }
+        if !NSApp.sendAction(selector, to: nil, from: nil) { NSSound.beep() }
     }
 }
