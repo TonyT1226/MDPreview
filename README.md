@@ -24,6 +24,9 @@ Current version: v1.3.0 · Requires macOS 14+ · MIT license
 - **Links**: `#heading` anchors jump within the document; relative `.md` links open in MDPreview.
 - **Task lists**: tick a checkbox in the reading view and the source file is updated.
 - **Editor** on TextKit 2 with line numbers. Markdown syntax coloring can be turned on in Settings.
+- **Editing help**: `⌘B` / `⌘I` / `⌘K` / `⇧⌘K` for bold / italic / link / inline code; Return continues
+  a list and exits it on an empty item; `Tab` / `⇧Tab` indent list items.
+- **Images**: paste or drop an image and it is saved to an `assets/` folder next to the document, with a link inserted.
 - **Settings** (`⌘,`): font, font size, line spacing, content width, light / dark / system theme.
   `⌘=` / `⌘-` / `⌘0` change the font size.
 - **Export to PDF and print** (`⌥⌘P` / `⌘P`).
@@ -55,7 +58,7 @@ PDF export and printing; reload on external change; all UI text moved to one pla
 The DMG is still ad-hoc signed and not notarized (that needs an Apple Developer account),
 so the first launch needs right-click › Open.
 
-**v1.4 (planned) — editing**
+**v1.4 (in progress) — editing**
 Formatting shortcuts (`⌘B` / `⌘I` / `⌘K` / `⇧⌘K`); list continuation on Return and Tab indenting;
 pasted or dropped images saved to `assets/`; fenced code blocks colored as a whole, and only lines
 near an edit re-scanned.
@@ -76,6 +79,7 @@ Inline images, math, HTML blocks, more accurate code highlighting, more language
 | `⌘R` / `⌘E` / `⇧⌘E` | Reading / editing / split view |
 | `⌘⌥S` | Show / hide outline |
 | `⌘F` | Find (reading and editing view) |
+| `⌘B` / `⌘I` / `⌘K` / `⇧⌘K` | Bold / italic / link / inline code (editing view) |
 | `⌘=` / `⌘-` / `⌘0` | Larger / smaller / default font size |
 | `⌘,` | Settings |
 | `⌘P` / `⌥⌘P` | Print / export as PDF |
