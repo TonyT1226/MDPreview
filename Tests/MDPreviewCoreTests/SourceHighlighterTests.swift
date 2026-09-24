@@ -72,4 +72,31 @@ struct SourceHighlighterTests {
             #expect(token.range.location + token.range.length <= ns.length)
         }
     }
+
+    @Test("**粗** 只算加粗，不再被斜体规则吃掉；*斜* 仍是斜体")
+    func boldIsNotItalic() {
+        let bold = MarkdownSourceHighlighter.tokens(in: "正文 **加粗** 结束")
+        #expect(bold.map(\.kind) == [.strong])
+        let italic = MarkdownSourceHighlighter.tokens(in: "正文 *斜体* 结束")
+        #expect(italic.map(\.kind) == [.emphasis])
+        let both = MarkdownSourceHighlighter.tokens(in: "**粗** 和 *斜*")
+        #expect(both.map(\.kind) == [.strong, .emphasis])
+    }
+
+    @Test("行内代码里的标记不着色")
+    func noStylesInsideInlineCode() {
+        let toks = MarkdownSourceHighlighter.tokens(in: "看 `a **b** c` 这里")
+        #expect(toks.map(\.kind) == [.inlineCode])
+    }
+
+    @Test("token 按起点排序，按区间取出的正好是这一行的")
+    func sortedAndSliced() {
+        let md = "# 标题\n**粗** `c`\n- 项 *斜*\n"
+        let toks = MarkdownSourceHighlighter.tokens(in: md)
+        #expect(toks.map(\.range.location) == toks.map(\.range.location).sorted())
+        let ns = md as NSString
+        let line2 = ns.lineRange(for: NSRange(location: ns.range(of: "**").location, length: 0))
+        let slice = MarkdownSourceHighlighter.tokens(toks, startingIn: line2)
+        #expect(slice.map(\.kind) == [.strong, .inlineCode])
+    }
 }

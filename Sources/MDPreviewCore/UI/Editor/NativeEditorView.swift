@@ -222,7 +222,7 @@ public struct NativeEditorView: NSViewRepresentable {
         private func scheduleRehighlight(for text: String) {
             rehighlightTask?.cancel()
             rehighlightTask = Task { @MainActor [weak self] in
-                try? await Task.sleep(for: .milliseconds(120))
+                try? await Task.sleep(for: .milliseconds(60))
                 guard !Task.isCancelled else { return }
                 self?.recomputeTokens(for: text)
             }
@@ -243,7 +243,7 @@ public struct NativeEditorView: NSViewRepresentable {
             guard fragEnd > fragStart else { return }
             let fragNS = NSRange(location: fragStart, length: fragEnd - fragStart)
 
-            for token in tokens {
+            for token in MarkdownSourceHighlighter.tokens(tokens, startingIn: fragNS) {
                 guard let hit = token.range.intersection(fragNS), hit.length > 0 else { continue }
                 guard let start = tcm.location(tlm.documentRange.location, offsetBy: hit.location),
                       let end = tcm.location(start, offsetBy: hit.length),
