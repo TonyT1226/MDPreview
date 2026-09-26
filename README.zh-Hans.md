@@ -7,7 +7,7 @@
 macOS 上的 Markdown 阅读 / 轻量编辑器。用 SwiftUI + AppKit + `apple/swift-markdown` 写成，
 不带 WebView。
 
-当前版本：v1.3.0 · 运行需 macOS 14+ · MIT 许可
+当前版本：v1.5.0 · 运行需 macOS 14+ · MIT 许可
 
 ---
 
@@ -43,7 +43,7 @@ macOS 上的 Markdown 阅读 / 轻量编辑器。用 SwiftUI + AppKit + `apple/s
 **v1.2**
 导出 PDF / 打印；外部修改热重载；界面文字收敛到一处。
 
-**v1.3（当前）**
+**v1.3**
 1. 阅读区改成只读的 `NSTextView`，可以跨块连续选择，阅读态可用 `⌘F`。
 2. 偏好设置：字体、字号、行距、版心宽度、主题、编辑器行号和源码着色。
 3. 界面、菜单、提示接入 String Catalog，提供 `en` + `zh-Hans`。
@@ -53,11 +53,11 @@ macOS 上的 Markdown 阅读 / 轻量编辑器。用 SwiftUI + AppKit + `apple/s
 
 DMG 仍是 ad-hoc 签名，没有公证（需要 Apple Developer 账号），首次打开要右键 › 打开。
 
-**v1.4（已合并，未发布）— 编辑体验**
+**v1.4 — 编辑体验**（随 1.5.0 一起发布）
 格式快捷键（`⌘B` / `⌘I` / `⌘K` / `⇧⌘K`）；列表回车续写、Tab 缩进；粘贴 / 拖入图片自动存到 `assets/`；
 源码视图里加粗不再被染成斜体色。
 
-**v1.5（已合并，未发布）— 性能与热重载**
+**v1.5（当前）— 性能与热重载**
 阅读区只重新渲染改动的块。160KB 文档改一个字，阅读区更新从约 0.8 秒降到约 30 毫秒。
 外部修改刷新后不再标成「已编辑」；文件被删后又出现时，继续监听。
 
@@ -82,7 +82,7 @@ DMG 仍是 ad-hoc 签名，没有公证（需要 Apple Developer 账号），首
 
 ## 安装
 
-从 [Releases](https://github.com/TonyT1226/MDPreview/releases) 下载 `MDPreview-<版本号>.dmg`（如 `MDPreview-1.3.0.dmg`），
+从 [Releases](https://github.com/TonyT1226/MDPreview/releases) 下载 `MDPreview-<版本号>.dmg`（如 `MDPreview-1.5.0.dmg`），
 把 `MDPreview.app` 拖进「应用程序」。首次打开需要右键 › 打开（没有公证）。
 
 Finder 预览扩展在 App 放进「应用程序」并打开过一次后生效。

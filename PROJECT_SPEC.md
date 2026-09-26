@@ -4,7 +4,7 @@
 > 不嵌 WebView、不跑 JS 引擎，`.md` 文本经 [`apple/swift-markdown`](https://github.com/apple/swift-markdown)
 > 解析成 AST，再排成一个 `NSAttributedString` 放进只读 `NSTextView`（TextKit 1）；编辑器用 TextKit 2 (`NSTextView`)。
 >
-> 当前版本 **v1.3.0** · 运行需 **macOS 14+** · 构建需 **Xcode 16+** · MIT
+> 当前版本 **v1.5.0** · 运行需 **macOS 14+** · 构建需 **Xcode 16+** · MIT
 
 本文件描述**当前实际实现**与**之后的候选计划**。已知未落地的能力集中在
 [§8 已知限制](#8-已知限制known-gaps) 和 [§9 路线图](#9-路线图roadmap)，不要把路线图当成现状。
@@ -225,7 +225,7 @@ md-reader/
 | **1.3.7 无障碍** (G9) | 见 §6。 |
 | **1.3.8 发布物** | `README.md`（英文）+ `README.zh-Hans.md`。签名公证未做（没有 Developer ID）。 |
 
-### v1.4 — 编辑体验（已合并到 main，未发布）
+### v1.4 — ✅ 编辑体验（随 [Release v1.5.0](https://github.com/TonyT1226/MDPreview/releases/tag/v1.5.0) 发布，没有单独的 1.4.0）
 
 | 项 | 落地内容 |
 | :-- | :-- |
@@ -237,7 +237,7 @@ md-reader/
 
 实现上，快捷格式 / 续写 / 缩进的规则都在 `MarkdownEditing`（文本 + 选区 → 一次替换），编辑器用 `shouldChangeText` 应用，保证一次撤销；输入法组字时一律不介入。
 
-### v1.5 — 性能与热重载（已合并到 main，未发布）
+### v1.5 — ✅ 性能与热重载（见 [Release v1.5.0](https://github.com/TonyT1226/MDPreview/releases/tag/v1.5.0)）
 
 | 项 | 落地内容 |
 | :-- | :-- |

@@ -7,7 +7,7 @@ English · [简体中文](README.zh-Hans.md)
 A Markdown reader and light editor for macOS. Written with SwiftUI, AppKit and
 `apple/swift-markdown`. No WebView.
 
-Current version: v1.3.0 · Requires macOS 14+ · MIT license
+Current version: v1.5.0 · Requires macOS 14+ · MIT license
 
 ---
 
@@ -47,7 +47,7 @@ Fixed Chinese input, task toggling, nested lists and `==` highlighting bugs; add
 **v1.2**
 PDF export and printing; reload on external change; all UI text moved to one place.
 
-**v1.3 (current)**
+**v1.3**
 1. The reading view is now a read-only `NSTextView`: selection works across blocks, `⌘F` works while reading.
 2. Settings: font, size, line spacing, content width, theme, editor line numbers and syntax coloring.
 3. UI, menus and messages use a String Catalog with `en` and `zh-Hans`.
@@ -58,11 +58,11 @@ PDF export and printing; reload on external change; all UI text moved to one pla
 The DMG is still ad-hoc signed and not notarized (that needs an Apple Developer account),
 so the first launch needs right-click › Open.
 
-**v1.4 (merged, not released) — editing**
+**v1.4 — editing** (released as part of 1.5.0)
 Formatting shortcuts (`⌘B` / `⌘I` / `⌘K` / `⇧⌘K`); list continuation on Return and Tab indenting;
 pasted or dropped images saved to `assets/`; bold no longer colored as italic in the source view.
 
-**v1.5 (merged, not released) — performance, reload**
+**v1.5 (current) — performance, reload**
 The reading view re-renders only the blocks that changed. On a 160 KB document, one edited character
 takes about 30 ms instead of about 0.8 s. Reloading after an external change no longer marks the
 document as edited, and a deleted file that comes back is watched again.
@@ -88,7 +88,7 @@ Inline images, math, HTML blocks, more accurate code highlighting, more language
 
 ## Install
 
-Download `MDPreview-<version>.dmg` (for example `MDPreview-1.3.0.dmg`) from [Releases](https://github.com/TonyT1226/MDPreview/releases)
+Download `MDPreview-<version>.dmg` (for example `MDPreview-1.5.0.dmg`) from [Releases](https://github.com/TonyT1226/MDPreview/releases)
 and drag `MDPreview.app` into Applications. The first time, open it with right-click › Open
 (the app is not notarized).
 
