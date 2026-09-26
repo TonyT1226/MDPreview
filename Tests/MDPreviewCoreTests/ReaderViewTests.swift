@@ -12,7 +12,7 @@ struct ReaderViewTests {
         let doc = ReaderRenderer(style: .default).render(parsed.blocks)
         let tv = ReaderTextView.make()
         tv.frame = NSRect(x: 0, y: 0, width: width, height: 100)
-        tv.textStorage?.setAttributedString(doc.text)
+        tv.pieces.update(to: parsed.blocks, renderer: ReaderRenderer(style: .default), storage: tv.textStorage!)
         tv.layoutManager!.ensureLayout(for: tv.textContainer!)
         tv.sizeToFit()
         return (tv, doc)
@@ -24,7 +24,7 @@ struct ReaderViewTests {
         let storage = try #require(tv.textStorage)
 
         var boxes: [Int] = []
-        storage.enumerateAttribute(.mdTaskSourceLine, in: NSRange(location: 0, length: storage.length)) { v, r, _ in
+        storage.enumerateAttribute(.mdTaskOrdinal, in: NSRange(location: 0, length: storage.length)) { v, r, _ in
             if v != nil { boxes.append(r.location) }
         }
         #expect(boxes.count == 2)

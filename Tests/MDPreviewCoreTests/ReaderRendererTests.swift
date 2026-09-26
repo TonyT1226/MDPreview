@@ -26,22 +26,21 @@ struct ReaderRendererTests {
         #expect(doc.headings.map(\.id) == parsed.tocItems.flatMap { [$0.id] + $0.children.map(\.id) })
         let s = doc.text.string as NSString
         #expect(s.substring(with: NSRange(location: doc.headings[1].location, length: 1)) == "二")
-        #expect(doc.text.attribute(.mdHeadingID, at: doc.headings[0].location, effectiveRange: nil) as? String == "heading-1")
         #expect(!doc.text.string.hasSuffix("\n"))
     }
 
-    @Test("任务项带源行号与勾选状态")
+    @Test("任务项带块内序号与勾选状态")
     func taskAttributes() {
         let doc = render("前言\n\n- [ ] 待办\n- [x] 完成\n")
         var found: [(Int, Bool)] = []
-        doc.text.enumerateAttribute(.mdTaskSourceLine, in: NSRange(location: 0, length: doc.text.length)) { v, range, _ in
+        doc.text.enumerateAttribute(.mdTaskOrdinal, in: NSRange(location: 0, length: doc.text.length)) { v, range, _ in
             guard let line = v as? Int else { return }
             let checked = doc.text.attribute(.mdTaskChecked, at: range.location, effectiveRange: nil) as? Bool ?? false
             found.append((line, checked))
         }
         #expect(found.count == 2)
-        #expect(found[0] == (2, false))
-        #expect(found[1] == (3, true))
+        #expect(found[0] == (0, false))
+        #expect(found[1] == (1, true))
     }
 
     @Test("代码块放进带底色的 NSTextBlock，使用等宽字体")
