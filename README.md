@@ -60,12 +60,12 @@ so the first launch needs right-click › Open.
 
 **v1.4 (in progress) — editing**
 Formatting shortcuts (`⌘B` / `⌘I` / `⌘K` / `⇧⌘K`); list continuation on Return and Tab indenting;
-pasted or dropped images saved to `assets/`; fenced code blocks colored as a whole, and only lines
-near an edit re-scanned.
+pasted or dropped images saved to `assets/`; bold no longer colored as italic in the source view.
 
-**v1.5 (planned)**
-The reading view re-lays out only the changed part of large documents; reloading after an external
-change no longer marks the document as edited.
+**v1.5 (in progress) — performance, reload**
+The reading view re-renders only the blocks that changed. On a 160 KB document, one edited character
+takes about 30 ms instead of about 0.8 s. Reloading after an external change no longer marks the
+document as edited, and a deleted file that comes back is watched again.
 
 **Later**
 Inline images, math, HTML blocks, more accurate code highlighting, more languages.
