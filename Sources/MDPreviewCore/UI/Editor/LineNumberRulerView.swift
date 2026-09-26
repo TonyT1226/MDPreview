@@ -69,6 +69,11 @@ final class LineNumberRulerView: NSRulerView {
         return lo
     }
 
+    /// 不调 super：NSRulerView 默认会在右侧画一条分隔线，这条线会一直延伸到标题栏下面
+    override func draw(_ dirtyRect: NSRect) {
+        drawHashMarksAndLabels(in: dirtyRect)
+    }
+
     override func drawHashMarksAndLabels(in rect: NSRect) {
         guard let textView, let tlm = textView.textLayoutManager,
               let tcm = tlm.textContentManager else { return }

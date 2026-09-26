@@ -123,29 +123,25 @@ struct ReaderTextRepresentable: NSViewRepresentable {
         weak var textView: ReaderTextView?
         weak var scrollView: NSScrollView?
 
-        private var lastBlocks: [MarkdownBlock]?
         private var lastStyle: ReaderStyle?
         private var lastBaseURL: URL?
-        private var headings: [(id: String, location: Int)] = []
+        private var headings: [(id: String, location: Int)] { textView?.pieces.headings ?? [] }
         private var lastReportedHeading: String?
 
         func renderIfNeeded(blocks: [MarkdownBlock], style: ReaderStyle, baseURL: URL?, force: Bool = false) {
-            guard let textView else { return }
-            if !force, lastBlocks == blocks, lastStyle == style, lastBaseURL == baseURL { return }
+            guard let textView, let storage = textView.textStorage else { return }
             let styleChanged = lastStyle != style
-            lastBlocks = blocks
+            let rerenderAll = force || styleChanged || lastBaseURL != baseURL
+            if !rerenderAll, textView.pieces.blocks == blocks { return }
             lastStyle = style
             lastBaseURL = baseURL
-
-            let renderer = ReaderRenderer(style: style, baseURL: baseURL, imageProvider: RemoteImageCache.shared)
-            let doc = renderer.render(blocks)
-            headings = doc.headings
 
             // 保持滚动位置：内容更新时视口顶部停在原处
             let origin = scrollView?.contentView.bounds.origin ?? .zero
             let selection = textView.selectedRanges
             textView.contentWidth = style.contentWidth
-            textView.textStorage?.setAttributedString(doc.text)
+            let renderer = ReaderRenderer(style: style, baseURL: baseURL, imageProvider: RemoteImageCache.shared)
+            textView.pieces.update(to: blocks, renderer: renderer, storage: storage, force: rerenderAll)
             if styleChanged { textView.updateInsets() }
             let length = textView.string.utf16.count
             let clamped = selection.compactMap { v -> NSValue? in
@@ -209,8 +205,14 @@ struct ReaderTextRepresentable: NSViewRepresentable {
         }
 
         @objc func remoteImageLoaded(_ note: Notification) {
-            guard let blocks = lastBlocks, let style = lastStyle else { return }
-            renderIfNeeded(blocks: blocks, style: style, baseURL: lastBaseURL, force: true)
+            guard let textView, let storage = textView.textStorage, let style = lastStyle else { return }
+            let origin = scrollView?.contentView.bounds.origin ?? .zero
+            let renderer = ReaderRenderer(style: style, baseURL: lastBaseURL, imageProvider: RemoteImageCache.shared)
+            guard textView.pieces.rerender(where: \.containsImage, renderer: renderer, storage: storage) > 0 else { return }
+            if let scrollView {
+                scrollView.contentView.scroll(to: origin)
+                scrollView.reflectScrolledClipView(scrollView.contentView)
+            }
         }
 
         // MARK: 链接
@@ -273,6 +275,8 @@ struct ReaderTextRepresentable: NSViewRepresentable {
 
 final class ReaderTextView: NSTextView {
     var onToggleTask: ((Int, Bool) -> Void)?
+    /// 阅读区按块增量更新的记录；打印、Quick Look 直接整段设置文本，不用它
+    let pieces = ReaderPieces()
     /// 版心宽度；视图更宽时左右留白居中
     var contentWidth: CGFloat = ReaderStyle.default.contentWidth
     /// 关掉后不再按版心自动算左右边距（打印时贴满可打印区域）
@@ -368,11 +372,10 @@ final class ReaderTextView: NSTextView {
         let glyph = layoutManager.glyphIndex(for: local, in: textContainer, fractionOfDistanceThroughGlyph: &fraction)
         let charIndex = layoutManager.characterIndexForGlyph(at: glyph)
         guard charIndex < storage.length,
-              let line = storage.attribute(.mdTaskSourceLine, at: charIndex, effectiveRange: nil) as? Int else { return nil }
+              let ordinal = storage.attribute(.mdTaskOrdinal, at: charIndex, effectiveRange: nil) as? Int else { return nil }
         // 确认点在复选框图形上，而不只是「最近的字符」
         let rect = layoutManager.boundingRect(forGlyphRange: NSRange(location: glyph, length: 1), in: textContainer)
         guard rect.insetBy(dx: -3, dy: -3).contains(local) else { return nil }
-        let checked = storage.attribute(.mdTaskChecked, at: charIndex, effectiveRange: nil) as? Bool ?? false
-        return (line, checked)
+        return pieces.task(at: charIndex, ordinal: ordinal)
     }
 }

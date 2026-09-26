@@ -1,5 +1,6 @@
 import Testing
 import AppKit
+import SwiftUI
 @testable import MDPreviewCore
 
 /// 目视检查用：设置环境变量 MDP_SNAPSHOT_DIR 时，把示例文档的阅读区渲染成 PNG（浅色 / 深色）。
@@ -99,5 +100,46 @@ struct SnapshotTests {
         let rep2 = scrollView.bitmapImageRepForCachingDisplay(in: scrollView.bounds)!
         scrollView.cacheDisplay(in: scrollView.bounds, to: rep2)
         try rep2.representation(using: .png, properties: [:])!.write(to: dir.appendingPathComponent("editor-end.png"))
+    }
+
+    @Test("渲染编辑器源码着色快照", .enabled(if: ProcessInfo.processInfo.environment["MDP_SNAPSHOT_DIR"] != nil))
+    func renderEditorHighlighting() throws {
+        let dir = URL(fileURLWithPath: ProcessInfo.processInfo.environment["MDP_SNAPSHOT_DIR"]!)
+        let md = """
+        # 标题
+
+        正文 **加粗** 和 `code`，[链接](https://a.b)。
+
+        ```swift
+        let a = 1
+        // 注释里的 **不是加粗**
+        - 不是列表
+        ```
+
+        - 列表项
+        > 引用
+        """
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 600, height: 360),
+                              styleMask: [.titled], backing: .buffered, defer: false)
+        var bound = md
+        let editor = NativeEditorView(text: Binding(get: { bound }, set: { bound = $0 }), fontSize: 14, highlighting: true)
+        let host = NSHostingView(rootView: editor.frame(width: 600, height: 360))
+        window.contentView = host
+        host.layoutSubtreeIfNeeded()
+        RunLoop.main.run(until: Date().addingTimeInterval(0.3))
+        let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds)!
+        host.cacheDisplay(in: host.bounds, to: rep)
+        try rep.representation(using: .png, properties: [:])!.write(to: dir.appendingPathComponent("editor-highlight.png"))
+    }
+
+    @Test("渲染插入图片说明弹窗", .enabled(if: ProcessInfo.processInfo.environment["MDP_SNAPSHOT_DIR"] != nil))
+    func renderImageNotice() throws {
+        let dir = URL(fileURLWithPath: ProcessInfo.processInfo.environment["MDP_SNAPSHOT_DIR"]!)
+        let alert = MarkdownTextView.imageNoticeAlert(documentURL: URL(fileURLWithPath: "/Users/me/笔记/周报.md"))
+        alert.layout()
+        let view = alert.window.contentView!
+        let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds)!
+        view.cacheDisplay(in: view.bounds, to: rep)
+        try rep.representation(using: .png, properties: [:])!.write(to: dir.appendingPathComponent("image-notice.png"))
     }
 }

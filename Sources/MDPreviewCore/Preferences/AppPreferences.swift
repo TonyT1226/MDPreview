@@ -10,6 +10,8 @@ public enum PrefKey {
     public static let theme = "app.theme"
     public static let editorHighlighting = "editor.sourceHighlighting"
     public static let editorLineNumbers = "editor.lineNumbers"
+    /// 插入图片时的说明弹窗被用户选了「不再显示」
+    public static let imageNoticeSuppressed = "editor.imageNoticeSuppressed"
 }
 
 public enum ReaderFontFamily: String, CaseIterable, Identifiable, Sendable {

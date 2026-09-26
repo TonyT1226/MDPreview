@@ -19,6 +19,24 @@
         }
       }
     },
+    "cancel": {
+      "comment": "Button",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消"
+          }
+        }
+      }
+    },
     "collapseSection": {
       "comment": "VoiceOver: collapse an outline item",
       "extractionState": "manual",
@@ -33,6 +51,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "折叠"
+          }
+        }
+      }
+    },
+    "dontShowAgain": {
+      "comment": "Alert suppression checkbox",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Don't show again"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "不再显示"
           }
         }
       }
@@ -271,6 +307,78 @@
         }
       }
     },
+    "formatBold": {
+      "comment": "Format menu item",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bold"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "加粗"
+          }
+        }
+      }
+    },
+    "formatInlineCode": {
+      "comment": "Format menu item",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inline Code"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "行内代码"
+          }
+        }
+      }
+    },
+    "formatItalic": {
+      "comment": "Format menu item",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Italic"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "斜体"
+          }
+        }
+      }
+    },
+    "formatLink": {
+      "comment": "Format menu item",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Link"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "链接"
+          }
+        }
+      }
+    },
     "headingAccessibilityLabel": {
       "comment": "VoiceOver label of an outline item",
       "extractionState": "manual",
@@ -397,6 +505,60 @@
         }
       }
     },
+    "imageNoticeInsert": {
+      "comment": "Alert button",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Insert"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "插入"
+          }
+        }
+      }
+    },
+    "imageNoticeMessage": {
+      "comment": "Alert message; the argument is the folder, e.g. Notes/assets",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The image will be copied to the “assets” folder next to this document (%@), and a link to it will be inserted at the cursor. If you move the document, move the assets folder with it."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "图片会复制到文档旁的 assets 文件夹（%@），并在光标处插入指向它的链接。移动文档时，请连同 assets 文件夹一起移动。"
+          }
+        }
+      }
+    },
+    "imageNoticeTitle": {
+      "comment": "Alert title when pasting or dropping an image into the editor",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Insert the image into this document?"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "将图片插入文档？"
+          }
+        }
+      }
+    },
     "imagePlaceholderWithAlt": {
       "comment": "Image placeholder message followed by alt text",
       "extractionState": "manual",
@@ -411,6 +573,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "%1$@：%2$@"
+          }
+        }
+      }
+    },
+    "imageSaveFailedTitle": {
+      "comment": "Alert title",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't save the image"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法保存图片"
           }
         }
       }
@@ -459,6 +639,42 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld 行"
+          }
+        }
+      }
+    },
+    "menuFormat": {
+      "comment": "Menu title",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Format"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "格式"
+          }
+        }
+      }
+    },
+    "ok": {
+      "comment": "Button",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "好"
           }
         }
       }
@@ -633,6 +849,24 @@
           "stringUnit": {
             "state": "translated",
             "value": "字号"
+          }
+        }
+      }
+    },
+    "prefsImageNotice": {
+      "comment": "Settings toggle",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Explain where images are saved when inserting them"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "插入图片时显示说明"
           }
         }
       }
@@ -813,6 +1047,42 @@
           "stringUnit": {
             "state": "translated",
             "value": "阅读模式"
+          }
+        }
+      }
+    },
+    "saveBeforeImageMessage": {
+      "comment": "Alert message",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Images are stored next to the document, so it needs a location on disk. Save it, then paste or drag the image again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "图片要存到文档旁边，所以文档得先有保存位置。保存后再粘贴或拖入图片。"
+          }
+        }
+      }
+    },
+    "saveBeforeImageTitle": {
+      "comment": "Alert title when inserting an image into an unsaved document",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save the document first"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先保存文档"
           }
         }
       }

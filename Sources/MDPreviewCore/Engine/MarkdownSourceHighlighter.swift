@@ -31,12 +31,14 @@ public struct MarkdownSourceHighlighter: Sendable {
 
     // 行内正则（一次编译，线程安全复用）
     private static let strongRegex = try! NSRegularExpression(pattern: #"(\*\*|__)(?=\S)(.+?)(?<=\S)\1"#)
-    private static let emphasisRegex = try! NSRegularExpression(pattern: #"(?<![\*_])([\*_])(?=\S)(.+?)(?<=\S)\1(?![\*_])"#)
+    // 单个 * / _：开头标记后、结尾标记前都不能再紧跟同类字符，否则 **粗** 会被当成 *斜*
+    private static let emphasisRegex = try! NSRegularExpression(pattern: #"(?<![\*_])([\*_])(?![\*_\s])(.+?)(?<![\*_\s])\1(?![\*_])"#)
     private static let strikeRegex = try! NSRegularExpression(pattern: #"~~(?=\S)(.+?)(?<=\S)~~"#)
     private static let inlineCodeRegex = try! NSRegularExpression(pattern: #"`[^`\n]+`"#)
     private static let linkRegex = try! NSRegularExpression(pattern: #"\[[^\]\n]*\]\([^)\n]*\)"#)
 
-    /// 扫描整段源码，返回所有 token（未排序需求：调用方按顺序施加即可）
+    /// 扫描整段源码，返回所有 token，按起点升序。
+    /// 每个 token 都不跨行；同一行内先出现的类别先施加（后施加的覆盖前者）。
     public static func tokens(in text: String) -> [Token] {
         let ns = text as NSString
         var tokens: [Token] = []
@@ -78,15 +80,38 @@ public struct MarkdownSourceHighlighter: Sendable {
                 tokens.append(Token(range: m, kind: .listMarker))
             }
 
-            // 行内
-            appendInline(strongRegex, in: line, base: lineRange.location, kind: .strong, into: &tokens)
-            appendInline(emphasisRegex, in: line, base: lineRange.location, kind: .emphasis, into: &tokens)
-            appendInline(strikeRegex, in: line, base: lineRange.location, kind: .strikethrough, into: &tokens)
-            appendInline(inlineCodeRegex, in: line, base: lineRange.location, kind: .inlineCode, into: &tokens)
-            appendInline(linkRegex, in: line, base: lineRange.location, kind: .link, into: &tokens)
+            // 行内：行内代码里的 ** / * / ~~ / 链接语法不算数
+            var inline: [Token] = []
+            appendInline(inlineCodeRegex, in: line, base: lineRange.location, kind: .inlineCode, into: &inline)
+            let codeRanges = inline.map(\.range)
+            var others: [Token] = []
+            appendInline(strongRegex, in: line, base: lineRange.location, kind: .strong, into: &others)
+            appendInline(emphasisRegex, in: line, base: lineRange.location, kind: .emphasis, into: &others)
+            appendInline(strikeRegex, in: line, base: lineRange.location, kind: .strikethrough, into: &others)
+            appendInline(linkRegex, in: line, base: lineRange.location, kind: .link, into: &others)
+            others.removeAll { t in codeRanges.contains { NSIntersectionRange($0, t.range).length > 0 } }
+            tokens.append(contentsOf: others)
+            tokens.append(contentsOf: inline)
         }
         _ = searchLocation
-        return tokens
+        // 稳定排序：起点相同的保持原有施加顺序
+        return tokens.enumerated()
+            .sorted { ($0.element.range.location, $0.offset) < ($1.element.range.location, $1.offset) }
+            .map(\.element)
+    }
+
+    /// 在按起点排好序的 token 里，找出起点落在 `range` 内的那一段（token 不跨行，
+    /// 而排版片段总是整行，所以这就是与片段相交的全部 token）
+    public static func tokens(_ sorted: [Token], startingIn range: NSRange) -> ArraySlice<Token> {
+        var lo = 0, hi = sorted.count
+        while lo < hi {
+            let mid = (lo + hi) / 2
+            if sorted[mid].range.location < range.location { lo = mid + 1 } else { hi = mid }
+        }
+        var end = lo
+        let limit = NSMaxRange(range)
+        while end < sorted.count, sorted[end].range.location < limit { end += 1 }
+        return sorted[lo..<end]
     }
 
     // MARK: - 行结构识别

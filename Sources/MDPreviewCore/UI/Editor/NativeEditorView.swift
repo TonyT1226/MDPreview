@@ -12,12 +12,16 @@ public struct NativeEditorView: NSViewRepresentable {
     public var highlighting: Bool
     /// 左侧行号栏（光标所在行加深）
     public var lineNumbers: Bool
+    /// 文档在磁盘上的位置（粘贴图片时存到它旁边的 assets/）；未保存为 nil
+    public var documentURL: URL?
 
-    public init(text: Binding<String>, fontSize: CGFloat = 13.5, highlighting: Bool = false, lineNumbers: Bool = true) {
+    public init(text: Binding<String>, fontSize: CGFloat = 13.5, highlighting: Bool = false,
+                lineNumbers: Bool = true, documentURL: URL? = nil) {
         self._text = text
         self.fontSize = fontSize
         self.highlighting = highlighting
         self.lineNumbers = lineNumbers
+        self.documentURL = documentURL
     }
 
     static func editorFont(size: CGFloat) -> NSFont {
@@ -27,7 +31,7 @@ public struct NativeEditorView: NSViewRepresentable {
     public func makeCoordinator() -> Coordinator { Coordinator(self) }
 
     public func makeNSView(context: Context) -> NSScrollView {
-        let scrollView = NSTextView.scrollableTextView()
+        let scrollView = MarkdownTextView.scrollableTextView()
         scrollView.drawsBackground = true
         scrollView.hasVerticalScroller = true
         scrollView.autohidesScrollers = true
@@ -52,6 +56,9 @@ public struct NativeEditorView: NSViewRepresentable {
         textView.string = text
         textView.delegate = context.coordinator
         context.coordinator.textView = textView
+        (textView as? MarkdownTextView)?.documentURL = { [weak coordinator = context.coordinator] in
+            coordinator?.parent.documentURL
+        }
 
         context.coordinator.setHighlighting(highlighting)
         context.coordinator.setLineNumbers(lineNumbers, fontSize: fontSize)
@@ -79,13 +86,22 @@ public struct NativeEditorView: NSViewRepresentable {
         guard textView.string != text else { return }
         if context.coordinator.isEditing || textView.hasMarkedText() { return }
 
+        // 只替换变化的那一段，并走可撤销的路径：撤销历史里的位置保持有效，
+        // 外部改动（热重载、分屏里勾选任务）本身也能撤销
         let selectedRanges = textView.selectedRanges
-        textView.string = text
+        let change = TextDiff.change(from: textView.string, to: text)
+        if textView.shouldChangeText(in: change.range, replacementString: change.replacement) {
+            textView.replaceCharacters(in: change.range, with: change.replacement)
+            textView.didChangeText()
+        } else {
+            textView.string = text
+            context.coordinator.editorUndoManager.removeAllActions()
+        }
+        let length = textView.string.utf16.count
         let clamped = selectedRanges.compactMap { value -> NSValue? in
             let r = value.rangeValue
-            guard r.location <= textView.string.utf16.count else { return nil }
-            let len = min(r.length, textView.string.utf16.count - r.location)
-            return NSValue(range: NSRange(location: r.location, length: len))
+            guard r.location <= length else { return nil }
+            return NSValue(range: NSRange(location: r.location, length: min(r.length, length - r.location)))
         }
         if !clamped.isEmpty {
             textView.selectedRanges = clamped
@@ -105,6 +121,16 @@ public struct NativeEditorView: NSViewRepresentable {
         var parent: NativeEditorView
         weak var textView: NSTextView?
         private(set) var isEditing = false
+
+        /// 编辑器自己的撤销管理器，与编辑器同生共死。
+        ///
+        /// 不能用窗口 / 文档共用的那个：切换阅读 / 编辑视图时编辑器会被销毁重建，
+        /// 留在共用撤销栈里的记录还指着已释放的文本视图，之后按 ⌘Z 就会崩溃。
+        let editorUndoManager = UndoManager()
+
+        public func undoManager(for view: NSTextView) -> UndoManager? {
+            editorUndoManager
+        }
 
         private var tokens: [MarkdownSourceHighlighter.Token] = []
         private var rehighlightTask: Task<Void, Never>?
@@ -135,6 +161,28 @@ public struct NativeEditorView: NSViewRepresentable {
             if highlightingOn {
                 scheduleRehighlight(for: newText)
             }
+        }
+
+        // MARK: - 回车 / Tab：列表续写与缩进
+
+        public func textView(_ textView: NSTextView, doCommandBy selector: Selector) -> Bool {
+            // 输入法组字时回车 / Tab 属于输入法，一律不介入
+            guard !textView.hasMarkedText() else { return false }
+            let selection = textView.selectedRange()
+            let edit: TextEdit?
+            switch selector {
+            case #selector(NSResponder.insertNewline(_:)):
+                edit = MarkdownEditing.newline(text: textView.string, selection: selection)
+            case #selector(NSResponder.insertTab(_:)):
+                edit = MarkdownEditing.indent(text: textView.string, selection: selection, outdent: false)
+            case #selector(NSResponder.insertBacktab(_:)):
+                edit = MarkdownEditing.indent(text: textView.string, selection: selection, outdent: true)
+            default:
+                edit = nil
+            }
+            guard let edit else { return false }
+            textView.apply(edit)
+            return true
         }
 
         // MARK: - 行号
@@ -200,7 +248,7 @@ public struct NativeEditorView: NSViewRepresentable {
         private func scheduleRehighlight(for text: String) {
             rehighlightTask?.cancel()
             rehighlightTask = Task { @MainActor [weak self] in
-                try? await Task.sleep(for: .milliseconds(120))
+                try? await Task.sleep(for: .milliseconds(60))
                 guard !Task.isCancelled else { return }
                 self?.recomputeTokens(for: text)
             }
@@ -221,7 +269,7 @@ public struct NativeEditorView: NSViewRepresentable {
             guard fragEnd > fragStart else { return }
             let fragNS = NSRange(location: fragStart, length: fragEnd - fragStart)
 
-            for token in tokens {
+            for token in MarkdownSourceHighlighter.tokens(tokens, startingIn: fragNS) {
                 guard let hit = token.range.intersection(fragNS), hit.length > 0 else { continue }
                 guard let start = tcm.location(tlm.documentRange.location, offsetBy: hit.location),
                       let end = tcm.location(start, offsetBy: hit.length),
@@ -253,5 +301,51 @@ public struct NativeEditorView: NSViewRepresentable {
                 return [.foregroundColor: NSColor.tertiaryLabelColor]
             }
         }
+    }
+}
+
+// MARK: - 应用编辑与快捷格式（经响应链到达当前编辑器）
+
+extension NSTextView {
+
+    /// 以一次可撤销的替换应用编辑，并设置选区
+    func apply(_ edit: TextEdit) {
+        guard shouldChangeText(in: edit.range, replacementString: edit.replacement) else { return }
+        replaceCharacters(in: edit.range, with: edit.replacement)
+        didChangeText()
+        setSelectedRange(edit.selection)
+        scrollRangeToVisible(edit.selection)
+    }
+
+    /// 只对 Markdown 编辑器生效（阅读区、查找栏等其他文本视图也在响应链上）
+    private var isMarkdownEditor: Bool {
+        isEditable && delegate is NativeEditorView.Coordinator && !hasMarkedText()
+    }
+
+    @objc func mdToggleBold(_ sender: Any?) { applyFormat { MarkdownEditing.toggleInline(.bold, text: $0, selection: $1) } }
+    @objc func mdToggleItalic(_ sender: Any?) { applyFormat { MarkdownEditing.toggleInline(.italic, text: $0, selection: $1) } }
+    @objc func mdToggleCode(_ sender: Any?) { applyFormat { MarkdownEditing.toggleInline(.code, text: $0, selection: $1) } }
+    @objc func mdInsertLink(_ sender: Any?) { applyFormat { MarkdownEditing.insertLink(text: $0, selection: $1) } }
+
+    private func applyFormat(_ make: (String, NSRange) -> TextEdit?) {
+        guard isMarkdownEditor, let edit = make(string, selectedRange()) else { NSSound.beep(); return }
+        apply(edit)
+    }
+}
+
+/// 「格式」菜单命令：发给响应链上的第一个编辑器
+@MainActor
+public enum MarkdownFormatCommand {
+    case bold, italic, code, link
+
+    public func send() {
+        let selector: Selector
+        switch self {
+        case .bold: selector = #selector(NSTextView.mdToggleBold(_:))
+        case .italic: selector = #selector(NSTextView.mdToggleItalic(_:))
+        case .code: selector = #selector(NSTextView.mdToggleCode(_:))
+        case .link: selector = #selector(NSTextView.mdInsertLink(_:))
+        }
+        if !NSApp.sendAction(selector, to: nil, from: nil) { NSSound.beep() }
     }
 }

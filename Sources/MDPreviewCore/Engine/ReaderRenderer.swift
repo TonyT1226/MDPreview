@@ -1,10 +1,9 @@
 import AppKit
 
 public extension NSAttributedString.Key {
-    /// 标题段落：值为标题 id（与 TOCItem.id 一致）
-    static let mdHeadingID = NSAttributedString.Key("MDPreview.headingID")
-    /// 任务复选框字符：值为源文档行号（0 基，Int）
-    static let mdTaskSourceLine = NSAttributedString.Key("MDPreview.taskSourceLine")
+    /// 任务复选框字符：它是所在顶层块里的第几个复选框（0 基，Int）。
+    /// 不直接存源行号：上方插入一行时行号会变，而块本身的渲染结果可以原样复用
+    static let mdTaskOrdinal = NSAttributedString.Key("MDPreview.taskOrdinal")
     /// 任务复选框字符：当前勾选状态（Bool）
     static let mdTaskChecked = NSAttributedString.Key("MDPreview.taskChecked")
 }
@@ -19,6 +18,12 @@ public struct RenderedDocument {
         self.text = text
         self.headings = headings
     }
+}
+
+/// 一个顶层块的渲染结果：文本（以段落结束符收尾）和其中标题的相对位置（按出现顺序）
+public struct RenderedPiece {
+    public let text: NSAttributedString
+    public let headingOffsets: [Int]
 }
 
 /// 远程图片的来源。命中缓存返回图片；未命中返回 nil 并在后台加载，加载完由调用方重渲染。
@@ -48,20 +53,37 @@ public struct ReaderRenderer {
     // MARK: - 入口
 
     public func render(_ blocks: [MarkdownBlock]) -> RenderedDocument {
-        var state = State()
-        renderBlocks(blocks, ctx: Context(), into: &state)
-        // 去掉末尾多余的段落结束符
-        if state.out.string.hasSuffix("\n") {
-            state.out.deleteCharacters(in: NSRange(location: state.out.length - 1, length: 1))
+        let out = NSMutableAttributedString()
+        var headings: [(id: String, location: Int)] = []
+        for (i, block) in blocks.enumerated() {
+            let piece = renderPiece(block, isFirst: i == 0)
+            headings += zip(block.renderedHeadingIDs, piece.headingOffsets).map { ($0, out.length + $1) }
+            out.append(piece.text)
         }
-        return RenderedDocument(text: state.out, headings: state.headings)
+        // 去掉末尾多余的段落结束符
+        if out.string.hasSuffix("\n") {
+            out.deleteCharacters(in: NSRange(location: out.length - 1, length: 1))
+        }
+        return RenderedDocument(text: out, headings: headings)
+    }
+
+    /// 渲染一个顶层块（含末尾段落结束符和块后间距）。
+    /// 结果只取决于块内容和它是不是第一块，所以阅读区可以按块缓存、只重渲染改动的块。
+    public func renderPiece(_ block: MarkdownBlock, isFirst: Bool) -> RenderedPiece {
+        var state = State(atDocumentStart: isFirst)
+        renderBlock(block, ctx: Context(), into: &state)
+        ensureTrailingSpacing(gap(Context()), ctx: Context(), state: &state)
+        return RenderedPiece(text: state.out, headingOffsets: state.headingOffsets)
     }
 
     // MARK: - 状态与上下文
 
     private struct State {
         var out = NSMutableAttributedString()
-        var headings: [(id: String, location: Int)] = []
+        /// 片段位于文档开头（第一个标题不留上边距）
+        var atDocumentStart = true
+        var headingOffsets: [Int] = []
+        var taskCount = 0
     }
 
     private struct Context {
@@ -231,8 +253,8 @@ public struct ReaderRenderer {
 
     private func renderBlock(_ block: MarkdownBlock, ctx: Context, into state: inout State) {
         switch block {
-        case .heading(let id, let level, _, let attributed):
-            renderHeading(id: id, level: level, attributed: attributed, ctx: ctx, into: &state)
+        case .heading(_, let level, _, let attributed):
+            renderHeading(level: level, attributed: attributed, ctx: ctx, into: &state)
 
         case .paragraph(_, let attributed):
             let content = inline(attributed, font: bodyFont(), color: ctx.color)
@@ -299,10 +321,10 @@ public struct ReaderRenderer {
 
     // MARK: 标题
 
-    private func renderHeading(id: String, level: Int, attributed: AttributedString, ctx: Context, into state: inout State) {
+    private func renderHeading(level: Int, attributed: AttributedString, ctx: Context, into state: inout State) {
         let font = headingFont(level: level)
         let content = inline(attributed, font: font, color: ctx.color)
-        let before = state.out.length == 0 ? 0 : (bodySize * (level <= 2 ? 1.3 : 0.9)).rounded()
+        let before = state.out.length == 0 && state.atDocumentStart ? 0 : (bodySize * (level <= 2 ? 1.3 : 0.9)).rounded()
 
         var extra: [NSTextBlock] = []
         var beforeSpacing = before
@@ -318,8 +340,7 @@ public struct ReaderRenderer {
             beforeSpacing = 0
         }
 
-        state.headings.append((id: id, location: state.out.length))
-        content.addAttribute(.mdHeadingID, value: id, range: NSRange(location: 0, length: content.length))
+        state.headingOffsets.append(state.out.length)
         emit(content, paragraph: paragraphStyle(ctx: ctx, lineHeight: 1.15, before: beforeSpacing,
                                                 after: level <= 2 ? 0 : bodySize * 0.35,
                                                 extraBlocks: extra),
@@ -447,7 +468,9 @@ public struct ReaderRenderer {
             case .ordered(let start):
                 marker = plain("\(start + offset).\t", font: markerFont, color: .secondaryLabelColor)
             case .task:
-                marker = checkbox(checked: item.checkbox ?? false, sourceLine: item.sourceLine, font: markerFont)
+                marker = checkbox(checked: item.checkbox ?? false, ordinal: state.taskCount,
+                                  clickable: item.sourceLine != nil, font: markerFont)
+                state.taskCount += 1
                 marker.append(plain("\t", font: markerFont, color: .labelColor))
             }
 
@@ -478,7 +501,7 @@ public struct ReaderRenderer {
         }
     }
 
-    private func checkbox(checked: Bool, sourceLine: Int?, font: NSFont) -> NSMutableAttributedString {
+    private func checkbox(checked: Bool, ordinal: Int, clickable: Bool, font: NSFont) -> NSMutableAttributedString {
         let attachment = NSTextAttachment()
         let symbol = checked ? "checkmark.square.fill" : "square"
         let desc = checked ? L.taskDone : L.taskTodo
@@ -494,8 +517,8 @@ public struct ReaderRenderer {
         let range = NSRange(location: 0, length: s.length)
         s.addAttribute(.font, value: font, range: range)
         s.addAttribute(.mdTaskChecked, value: checked, range: range)
-        if let sourceLine {
-            s.addAttribute(.mdTaskSourceLine, value: sourceLine, range: range)
+        if clickable {
+            s.addAttribute(.mdTaskOrdinal, value: ordinal, range: range)
             s.addAttribute(.cursor, value: NSCursor.pointingHand, range: range)
         }
         s.addAttribute(.toolTip, value: desc, range: range)

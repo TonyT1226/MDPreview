@@ -7,6 +7,11 @@ import Markdown
 /// 字体、字号、行距不在这里定 —— 由 `ReaderRenderer` 按偏好统一排版。
 public struct AttributedStringBuilder: Sendable {
 
+    // 动态颜色按对象比较相等；每次解析都新建的话，内容没变的块也会被当成改过（阅读区增量更新靠比较块内容）
+    nonisolated(unsafe) private static let inlineCodeBackground = NSColor.dynamic(light: NSColor(white: 0, alpha: 0.06),
+                                                                               dark: NSColor(white: 1, alpha: 0.12))
+    nonisolated(unsafe) private static let highlightBackground = NSColor.dynamic(.systemYellow, alpha: 0.38)
+
     public static func build(from markup: any Markup) -> AttributedString {
         var result = AttributedString()
         for child in markup.children {
@@ -33,8 +38,7 @@ public struct AttributedStringBuilder: Sendable {
         case let inlineCode as Markdown.InlineCode:
             var attr = AttributedString(inlineCode.code)
             attr.inlinePresentationIntent = (attr.inlinePresentationIntent ?? []).union(.code)
-            attr.appKit.backgroundColor = NSColor.dynamic(light: NSColor(white: 0, alpha: 0.06),
-                                                          dark: NSColor(white: 1, alpha: 0.12))
+            attr.appKit.backgroundColor = inlineCodeBackground
             return attr
 
         case let strikethrough as Markdown.Strikethrough:
@@ -99,7 +103,7 @@ public struct AttributedStringBuilder: Sendable {
                 result.append(AttributedString(String(string[cursor..<match.range.lowerBound])))
             }
             var highlighted = AttributedString(String(match.1))
-            highlighted.appKit.backgroundColor = NSColor.dynamic(.systemYellow, alpha: 0.38)
+            highlighted.appKit.backgroundColor = highlightBackground
             result.append(highlighted)
             cursor = match.range.upperBound
         }

@@ -24,6 +24,11 @@ public enum L {
     public static let zoomIn = String(localized: "zoomIn", defaultValue: "Zoom In", bundle: .module, comment: "View menu item: larger text")
     public static let zoomOut = String(localized: "zoomOut", defaultValue: "Zoom Out", bundle: .module, comment: "View menu item: smaller text")
     public static let actualSize = String(localized: "actualSize", defaultValue: "Actual Size", bundle: .module, comment: "View menu item: default text size")
+    public static let menuFormat = String(localized: "menuFormat", defaultValue: "Format", bundle: .module, comment: "Menu title")
+    public static let formatBold = String(localized: "formatBold", defaultValue: "Bold", bundle: .module, comment: "Format menu item")
+    public static let formatItalic = String(localized: "formatItalic", defaultValue: "Italic", bundle: .module, comment: "Format menu item")
+    public static let formatInlineCode = String(localized: "formatInlineCode", defaultValue: "Inline Code", bundle: .module, comment: "Format menu item")
+    public static let formatLink = String(localized: "formatLink", defaultValue: "Link", bundle: .module, comment: "Format menu item")
     public static let printDocument = String(localized: "printDocument", defaultValue: "Print…", bundle: .module, comment: "File menu item")
     public static let exportPDF = String(localized: "exportPDF", defaultValue: "Export as PDF…", bundle: .module, comment: "File menu item")
 
@@ -50,6 +55,17 @@ public enum L {
     public static let imageLoading = String(localized: "imageLoading", defaultValue: "Loading image", bundle: .module, comment: "Image placeholder")
     public static let imageCannotLoad = String(localized: "imageCannotLoad", defaultValue: "Cannot load image", bundle: .module, comment: "Image placeholder")
     public static let imageInvalidPath = String(localized: "imageInvalidPath", defaultValue: "Invalid image path", bundle: .module, comment: "Image placeholder")
+
+    // MARK: - 插入图片
+
+    public static let imageNoticeTitle = String(localized: "imageNoticeTitle", defaultValue: "Insert the image into this document?", bundle: .module, comment: "Alert title when pasting or dropping an image into the editor")
+    public static let imageNoticeInsert = String(localized: "imageNoticeInsert", defaultValue: "Insert", bundle: .module, comment: "Alert button")
+    public static let dontShowAgain = String(localized: "dontShowAgain", defaultValue: "Don't show again", bundle: .module, comment: "Alert suppression checkbox")
+    public static let saveBeforeImageTitle = String(localized: "saveBeforeImageTitle", defaultValue: "Save the document first", bundle: .module, comment: "Alert title when inserting an image into an unsaved document")
+    public static let saveBeforeImageMessage = String(localized: "saveBeforeImageMessage", defaultValue: "Images are stored next to the document, so it needs a location on disk. Save it, then paste or drag the image again.", bundle: .module, comment: "Alert message")
+    public static let imageSaveFailedTitle = String(localized: "imageSaveFailedTitle", defaultValue: "Couldn't save the image", bundle: .module, comment: "Alert title")
+    public static let cancel = String(localized: "cancel", defaultValue: "Cancel", bundle: .module, comment: "Button")
+    public static let ok = String(localized: "ok", defaultValue: "OK", bundle: .module, comment: "Button")
 
     // MARK: - 外部修改热重载
 
@@ -80,6 +96,7 @@ public enum L {
     public static let prefsTheme = String(localized: "prefsTheme", defaultValue: "Theme", bundle: .module, comment: "Settings row")
     public static let prefsEditor = String(localized: "prefsEditor", defaultValue: "Editor", bundle: .module, comment: "Settings section")
     public static let prefsLineNumbers = String(localized: "prefsLineNumbers", defaultValue: "Show line numbers", bundle: .module, comment: "Settings toggle")
+    public static let prefsImageNotice = String(localized: "prefsImageNotice", defaultValue: "Explain where images are saved when inserting them", bundle: .module, comment: "Settings toggle")
     public static let prefsSourceHighlighting = String(localized: "prefsSourceHighlighting", defaultValue: "Markdown syntax coloring", bundle: .module, comment: "Settings toggle")
     public static let prefsSourceHighlightingHint = String(localized: "prefsSourceHighlightingHint", defaultValue: "Colors headings, emphasis, code, links and other syntax in the editor.", bundle: .module, comment: "Settings hint")
     public static let prefsRestoreDefaults = String(localized: "prefsRestoreDefaults", defaultValue: "Restore Defaults", bundle: .module, comment: "Settings button")
@@ -106,6 +123,9 @@ public enum L {
     }
     public static func statusAccessibilityLabel(words: Int, lines: Int) -> String {
         String(localized: "statusAccessibilityLabel", defaultValue: "\(words) words, \(lines) lines", bundle: .module, comment: "VoiceOver label of the word-count pill")
+    }
+    public static func imageNoticeMessage(folder: String) -> String {
+        String(localized: "imageNoticeMessage", defaultValue: "The image will be copied to the “assets” folder next to this document (\(folder)), and a link to it will be inserted at the cursor. If you move the document, move the assets folder with it.", bundle: .module, comment: "Alert message; the argument is the folder, e.g. Notes/assets")
     }
     static let exportPDFDocumentStem = String(localized: "exportPDFDocumentStem", defaultValue: "Document", bundle: .module, comment: "Default PDF file name when the document has no title")
 

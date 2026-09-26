@@ -9,6 +9,7 @@ public struct PreferencesView: View {
     @AppStorage(PrefKey.theme) private var theme = AppTheme.system.rawValue
     @AppStorage(PrefKey.editorHighlighting) private var editorHighlighting = false
     @AppStorage(PrefKey.editorLineNumbers) private var editorLineNumbers = true
+    @AppStorage(PrefKey.imageNoticeSuppressed) private var imageNoticeSuppressed = false
 
     public init() {}
 
@@ -63,6 +64,8 @@ public struct PreferencesView: View {
 
             Section(L.prefsEditor) {
                 Toggle(L.prefsLineNumbers, isOn: $editorLineNumbers)
+                Toggle(L.prefsImageNotice, isOn: Binding(get: { !imageNoticeSuppressed },
+                                                         set: { imageNoticeSuppressed = !$0 }))
                 Toggle(L.prefsSourceHighlighting, isOn: $editorHighlighting)
                 Text(L.prefsSourceHighlightingHint)
                     .font(.caption)
@@ -90,5 +93,6 @@ public struct PreferencesView: View {
         theme = AppTheme.system.rawValue
         editorHighlighting = false
         editorLineNumbers = true
+        imageNoticeSuppressed = false
     }
 }

@@ -6,6 +6,7 @@ import Foundation
 /// - 事件合并 150ms，避免一次保存触发多次回调
 /// - 处理原子保存：编辑器常「写临时文件 → rename 覆盖」，旧 fd 会指向被 unlink 的 inode；
 ///   检测到 inode 变化就按原路径重新挂载
+/// - 文件被删后改为监听所在目录；同名文件再出现时重新挂载并报 `.modified`
 public final class FileMonitor: @unchecked Sendable {
 
     public enum Event: Sendable {
@@ -21,6 +22,7 @@ public final class FileMonitor: @unchecked Sendable {
     private var source: (any DispatchSourceFileSystemObject)?
     private var descriptor: Int32 = -1
     private var generation = 0
+    private var directorySource: (any DispatchSourceFileSystemObject)?
 
     public init(url: URL, onChange: @escaping @MainActor (Event) -> Void) {
         self.url = url
@@ -30,17 +32,24 @@ public final class FileMonitor: @unchecked Sendable {
 
     deinit {
         source?.cancel()
+        directorySource?.cancel()
     }
 
     public func stop() {
-        queue.sync { teardownSource() }
+        queue.sync {
+            teardownSource()
+            teardownDirectorySource()
+        }
     }
 
     // MARK: - DispatchSource 生命周期（均在 queue 上）
 
     private func startSource() {
         descriptor = open(url.path, O_EVTONLY)
-        guard descriptor >= 0 else { return }
+        guard descriptor >= 0 else {
+            startDirectorySource()   // 文件暂时不在：等它出现
+            return
+        }
 
         let src = DispatchSource.makeFileSystemObjectSource(
             fileDescriptor: descriptor,
@@ -63,6 +72,26 @@ public final class FileMonitor: @unchecked Sendable {
         descriptor = -1
     }
 
+    // MARK: - 文件不在时监听目录（均在 queue 上）
+
+    private func startDirectorySource() {
+        guard directorySource == nil else { return }
+        let fd = open(url.deletingLastPathComponent().path, O_EVTONLY)
+        guard fd >= 0 else { return }
+        let src = DispatchSource.makeFileSystemObjectSource(fileDescriptor: fd, eventMask: [.write], queue: queue)
+        src.setEventHandler { [weak self] in
+            self?.scheduleEvaluation()
+        }
+        src.setCancelHandler { close(fd) }
+        directorySource = src
+        src.resume()
+    }
+
+    private func teardownDirectorySource() {
+        directorySource?.cancel()
+        directorySource = nil
+    }
+
     // MARK: - 评估（queue 上）
 
     private func scheduleEvaluation() {
@@ -76,11 +105,18 @@ public final class FileMonitor: @unchecked Sendable {
 
     private func evaluate() {
         guard FileManager.default.fileExists(atPath: url.path) else {
-            teardownSource()
-            deliver(.deleted)
+            if source != nil {
+                teardownSource()
+                deliver(.deleted)
+            }
+            startDirectorySource()
             return
         }
-        if isDescriptorStale() {
+        if directorySource != nil {
+            // 文件回来了
+            teardownDirectorySource()
+            startSource()
+        } else if isDescriptorStale() {
             teardownSource()
             startSource()   // 重新挂到新 inode（原子保存）
         }

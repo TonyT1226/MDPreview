@@ -63,6 +63,23 @@ struct MDPreviewApp: App {
                 Divider()
             }
 
+            CommandMenu(L.menuFormat) {
+                let editing = editorState.map { $0.viewMode != .reading } ?? false
+                Button(L.formatBold) { MarkdownFormatCommand.bold.send() }
+                    .keyboardShortcut("b", modifiers: .command)
+                    .disabled(!editing)
+                Button(L.formatItalic) { MarkdownFormatCommand.italic.send() }
+                    .keyboardShortcut("i", modifiers: .command)
+                    .disabled(!editing)
+                Button(L.formatInlineCode) { MarkdownFormatCommand.code.send() }
+                    .keyboardShortcut("k", modifiers: [.command, .shift])
+                    .disabled(!editing)
+                Divider()
+                Button(L.formatLink) { MarkdownFormatCommand.link.send() }
+                    .keyboardShortcut("k", modifiers: .command)
+                    .disabled(!editing)
+            }
+
             CommandGroup(replacing: .printItem) {
                 Button(L.printDocument) {
                     if let printable { DocumentPrinter.runPrintPanel(printable) }

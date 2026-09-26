@@ -57,10 +57,7 @@ public struct MainDocumentView: View {
             .toolbar { NativeUnifiedToolbar(state: state) }
             .confirmationDialog(L.externalChangeTitle, isPresented: $showConflict, titleVisibility: .visible) {
                 Button(L.useDiskVersion) {
-                    if let disk = conflictDiskText {
-                        document.text = disk
-                        lastDiskText = disk
-                    }
+                    if let disk = conflictDiskText { reloadFromDisk(disk) }
                     conflictDiskText = nil
                 }
                 Button(L.keepMyChanges, role: .cancel) {
@@ -130,7 +127,8 @@ public struct MainDocumentView: View {
         NativeEditorView(text: $document.text,
                          fontSize: max(10, CGFloat(fontSize) - 1.5),
                          highlighting: editorHighlighting,
-                         lineNumbers: editorLineNumbers)
+                         lineNumbers: editorLineNumbers,
+                         documentURL: fileURL)
     }
 
     private var fileMissingBanner: some View {
@@ -172,14 +170,27 @@ public struct MainDocumentView: View {
             }
             if document.text == lastDiskText {
                 // 本地无改动 —— 静默重载
-                document.text = disk
-                lastDiskText = disk
+                reloadFromDisk(disk)
             } else {
                 // 本地 + 外部都改了 —— 让用户选
                 conflictDiskText = disk
                 showConflict = true
             }
         }
+    }
+
+    /// 换成磁盘上的内容，且不把文档标成「已编辑」：走 `NSDocument` 的 revert
+    /// （与「文件 › 复原到 › 上次存储的版本」同一条路）。找不到对应的 NSDocument 或 revert 失败时，
+    /// 退回直接改文本（会标成已编辑，v1.4 及以前的行为）。
+    private func reloadFromDisk(_ disk: String) {
+        lastDiskText = disk
+        if let url = fileURL,
+           let nsDocument = NSDocumentController.shared.document(for: url),
+           let type = nsDocument.fileType,
+           (try? nsDocument.revert(toContentsOf: url, ofType: type)) != nil {
+            return
+        }
+        document.text = disk
     }
 
     private var reader: some View {
