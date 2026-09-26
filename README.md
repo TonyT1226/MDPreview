@@ -58,11 +58,11 @@ PDF export and printing; reload on external change; all UI text moved to one pla
 The DMG is still ad-hoc signed and not notarized (that needs an Apple Developer account),
 so the first launch needs right-click › Open.
 
-**v1.4 (in progress) — editing**
+**v1.4 (merged, not released) — editing**
 Formatting shortcuts (`⌘B` / `⌘I` / `⌘K` / `⇧⌘K`); list continuation on Return and Tab indenting;
 pasted or dropped images saved to `assets/`; bold no longer colored as italic in the source view.
 
-**v1.5 (in progress) — performance, reload**
+**v1.5 (merged, not released) — performance, reload**
 The reading view re-renders only the blocks that changed. On a 160 KB document, one edited character
 takes about 30 ms instead of about 0.8 s. Reloading after an external change no longer marks the
 document as edited, and a deleted file that comes back is watched again.
