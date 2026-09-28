@@ -58,6 +58,7 @@
 		3A4D59B9BE16EB02D0126BB1 /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		4E5232120A178D06CE739536 /* QuickLookThumbnailing.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuickLookThumbnailing.framework; path = System/Library/Frameworks/QuickLookThumbnailing.framework; sourceTree = SDKROOT; };
 		675EC0F8445DA4E90BEBCFFB /* MDPreview.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MDPreview.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		67F39F95A16990B26501D757 /* MDPreview.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MDPreview.entitlements; sourceTree = "<group>"; };
 		79D75CD1CA01FC36D27E1EDF /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		87452F6D47A307DC28F797EB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		AC7E2143F95043D2A99B73DC /* PreviewViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewViewController.swift; sourceTree = "<group>"; };
@@ -125,6 +126,7 @@
 				0315CEB6C61FF75A4FFE10DB /* Assets.xcassets */,
 				87452F6D47A307DC28F797EB /* Info.plist */,
 				3A4D59B9BE16EB02D0126BB1 /* InfoPlist.xcstrings */,
+				67F39F95A16990B26501D757 /* MDPreview.entitlements */,
 				D9D8E2A7355F1DE4B6D160AA /* MDPreviewApp.swift */,
 			);
 			path = App;
@@ -349,6 +351,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Sources/App/MDPreview.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = Sources/App/Info.plist;
@@ -367,6 +370,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Sources/App/MDPreview.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = Sources/App/Info.plist;

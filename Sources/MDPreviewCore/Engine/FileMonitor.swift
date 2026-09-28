@@ -6,7 +6,8 @@ import Foundation
 /// - 事件合并 150ms，避免一次保存触发多次回调
 /// - 处理原子保存：编辑器常「写临时文件 → rename 覆盖」，旧 fd 会指向被 unlink 的 inode；
 ///   检测到 inode 变化就按原路径重新挂载
-/// - 文件被删后改为监听所在目录；同名文件再出现时重新挂载并报 `.modified`
+/// - 文件被删后改为监听所在目录；同名文件再出现时重新挂载并报 `.modified`。
+///   沙盒里没有目录的访问权限时打不开目录，改为每秒检查一次文件在不在
 public final class FileMonitor: @unchecked Sendable {
 
     public enum Event: Sendable {
@@ -22,10 +23,19 @@ public final class FileMonitor: @unchecked Sendable {
     private var source: (any DispatchSourceFileSystemObject)?
     private var descriptor: Int32 = -1
     private var generation = 0
-    private var directorySource: (any DispatchSourceFileSystemObject)?
+    private var directorySource: (any DispatchSourceProtocol)?
+    /// 测试用：不监听目录，直接走轮询（模拟沙盒里打不开目录的情况）
+    private let forcePolling: Bool
 
-    public init(url: URL, onChange: @escaping @MainActor (Event) -> Void) {
+    static let pollInterval: DispatchTimeInterval = .seconds(1)
+
+    public convenience init(url: URL, onChange: @escaping @MainActor (Event) -> Void) {
+        self.init(url: url, forcePolling: false, onChange: onChange)
+    }
+
+    init(url: URL, forcePolling: Bool, onChange: @escaping @MainActor (Event) -> Void) {
         self.url = url
+        self.forcePolling = forcePolling
         self.onChange = onChange
         queue.async { [weak self] in self?.startSource() }
     }
@@ -76,13 +86,20 @@ public final class FileMonitor: @unchecked Sendable {
 
     private func startDirectorySource() {
         guard directorySource == nil else { return }
-        let fd = open(url.deletingLastPathComponent().path, O_EVTONLY)
-        guard fd >= 0 else { return }
-        let src = DispatchSource.makeFileSystemObjectSource(fileDescriptor: fd, eventMask: [.write], queue: queue)
+        let fd = forcePolling ? -1 : open(url.deletingLastPathComponent().path, O_EVTONLY)
+        let src: any DispatchSourceProtocol
+        if fd >= 0 {
+            let dir = DispatchSource.makeFileSystemObjectSource(fileDescriptor: fd, eventMask: [.write], queue: queue)
+            dir.setCancelHandler { close(fd) }
+            src = dir
+        } else {
+            let timer = DispatchSource.makeTimerSource(queue: queue)
+            timer.schedule(deadline: .now() + Self.pollInterval, repeating: Self.pollInterval)
+            src = timer
+        }
         src.setEventHandler { [weak self] in
             self?.scheduleEvaluation()
         }
-        src.setCancelHandler { close(fd) }
         directorySource = src
         src.resume()
     }

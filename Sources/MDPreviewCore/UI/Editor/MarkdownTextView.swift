@@ -28,7 +28,7 @@ final class MarkdownTextView: NSTextView {
             return
         }
 
-        let proceed = { [weak self] in
+        let save = { [weak self] in
             guard let self else { return }
             do {
                 let paths = try ImageAssets.save(sources, documentURL: docURL)
@@ -41,6 +41,14 @@ final class MarkdownTextView: NSTextView {
                                     selection: NSRange(location: safe.location + (snippet as NSString).length, length: 0)))
             } catch {
                 self.showAlert(title: L.imageSaveFailedTitle, message: error.localizedDescription)
+            }
+        }
+        // 沙盒里写 assets/ 要先有文档所在文件夹的权限
+        let proceed = { [weak self] in
+            let directory = docURL.deletingLastPathComponent()
+            guard FolderAccess.shared.needsAccess(to: directory) else { return save() }
+            FolderAccess.shared.requestAccess(to: directory, from: self?.window) { granted in
+                if granted { save() }
             }
         }
 

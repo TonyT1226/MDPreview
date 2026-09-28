@@ -70,8 +70,9 @@ struct FileMonitorTests {
         #expect(event == .deleted)
     }
 
-    @Test("文件删除后又出现：先报 .deleted，再报 .modified，之后的写入继续能收到")
-    func detectsRecreate() async throws {
+    @Test("文件删除后又出现：先报 .deleted，再报 .modified，之后的写入继续能收到",
+          arguments: [false, true])
+    func detectsRecreate(forcePolling: Bool) async throws {
         let url = try tempFile("initial")
         defer { try? FileManager.default.removeItem(at: url) }
 
@@ -81,7 +82,7 @@ struct FileMonitorTests {
             var target = 0
         }
         let box = Box()
-        let monitor = FileMonitor(url: url) { ev in
+        let monitor = FileMonitor(url: url, forcePolling: forcePolling) { ev in
             box.events.append(ev)
             if box.events.count == box.target, let w = box.waiter {
                 box.waiter = nil

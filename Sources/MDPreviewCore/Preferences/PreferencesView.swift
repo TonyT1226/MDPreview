@@ -10,6 +10,7 @@ public struct PreferencesView: View {
     @AppStorage(PrefKey.editorHighlighting) private var editorHighlighting = false
     @AppStorage(PrefKey.editorLineNumbers) private var editorLineNumbers = true
     @AppStorage(PrefKey.imageNoticeSuppressed) private var imageNoticeSuppressed = false
+    @ObservedObject private var folderAccess = FolderAccess.shared
 
     public init() {}
 
@@ -70,6 +71,34 @@ public struct PreferencesView: View {
                 Text(L.prefsSourceHighlightingHint)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+            }
+
+            if FolderAccess.isSandboxed {
+                Section {
+                    if folderAccess.folders.isEmpty {
+                        Text(L.prefsFolderAccessEmpty)
+                            .foregroundStyle(.secondary)
+                    }
+                    ForEach(folderAccess.folders, id: \.self) { folder in
+                        HStack {
+                            Image(systemName: "folder")
+                                .foregroundStyle(.secondary)
+                                .accessibilityHidden(true)
+                            Text(folder.path(percentEncoded: false))
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                                .help(folder.path(percentEncoded: false))
+                            Spacer()
+                            Button(L.prefsFolderAccessRemove) { folderAccess.revoke(folder) }
+                        }
+                    }
+                } header: {
+                    Text(L.prefsFolderAccess)
+                } footer: {
+                    Text(L.prefsFolderAccessHint)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
 
             Section {

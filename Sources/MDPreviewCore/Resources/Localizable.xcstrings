@@ -55,6 +55,24 @@
         }
       }
     },
+    "dismiss": {
+      "comment": "VoiceOver label of a banner close button",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dismiss"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关闭"
+          }
+        }
+      }
+    },
     "dontShowAgain": {
       "comment": "Alert suppression checkbox",
       "extractionState": "manual",
@@ -249,6 +267,78 @@
           "stringUnit": {
             "state": "translated",
             "value": "此文件已在磁盘上被删除或移动。"
+          }
+        }
+      }
+    },
+    "folderAccessBannerButton": {
+      "comment": "Banner button",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow Access…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "允许访问…"
+          }
+        }
+      }
+    },
+    "folderAccessBannerMessage": {
+      "comment": "Banner; the argument is a folder name",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Local images in this document can’t be shown until MDPreview is allowed to access the folder “%@”."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "允许 MDPreview 访问「%@」文件夹后，才能显示此文档中的本地图片。"
+          }
+        }
+      }
+    },
+    "folderAccessPanelMessage": {
+      "comment": "Open panel message; the argument is a folder name",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To show images and open linked files, select the folder “%@” and click Allow Access. You can also select a folder that contains it."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "为了显示图片、打开链接到的文件，请选中「%@」文件夹，然后点按「允许访问」。也可以选择包含它的上级文件夹。"
+          }
+        }
+      }
+    },
+    "folderAccessPanelPrompt": {
+      "comment": "Open panel button that grants access to a folder",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow Access"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "允许访问"
           }
         }
       }
@@ -813,6 +903,78 @@
           "stringUnit": {
             "state": "translated",
             "value": "编辑器"
+          }
+        }
+      }
+    },
+    "prefsFolderAccess": {
+      "comment": "Settings section",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Folder Access"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文件夹访问"
+          }
+        }
+      }
+    },
+    "prefsFolderAccessEmpty": {
+      "comment": "Settings empty list",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No folders yet"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂无"
+          }
+        }
+      }
+    },
+    "prefsFolderAccessHint": {
+      "comment": "Settings hint",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MDPreview can read these folders to show local images, open linked documents and save pasted images."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MDPreview 可以读取这些文件夹，用来显示本地图片、打开链接到的文档、保存粘贴的图片。"
+          }
+        }
+      }
+    },
+    "prefsFolderAccessRemove": {
+      "comment": "Settings button",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移除"
           }
         }
       }

@@ -21,6 +21,10 @@ public struct MainDocumentView: View {
     @State private var showConflict = false
     @State private var fileMissing = false
 
+    // 沙盒：文档旁的本地图片需要授权文件夹
+    @State private var folderAccessNeeded = false
+    @State private var folderAccessDismissed = false
+
     public init(document: Binding<MarkdownDocument>, fileURL: URL? = nil) {
         self._document = document
         self.fileURL = fileURL
@@ -48,6 +52,7 @@ public struct MainDocumentView: View {
             ZStack(alignment: .bottomTrailing) {
                 VStack(spacing: 0) {
                     if fileMissing { fileMissingBanner }
+                    if folderAccessNeeded && !folderAccessDismissed { folderAccessBanner }
                     mainContentView
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
@@ -78,6 +83,11 @@ public struct MainDocumentView: View {
         .onAppear { scheduleParse(text: document.text, immediate: true) }
         .onChange(of: fileURL, initial: true) { _, url in
             setupMonitor(for: url)
+            updateFolderAccessNeeded()
+        }
+        .onChange(of: parsedDoc.blocks) { _, _ in updateFolderAccessNeeded() }
+        .onReceive(NotificationCenter.default.publisher(for: FolderAccess.didChange)) { _ in
+            updateFolderAccessNeeded()
         }
         .onDisappear {
             monitor?.stop()
@@ -142,6 +152,46 @@ public struct MainDocumentView: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
         .background(Color.orange.opacity(0.12))
+    }
+
+    // MARK: - 文件夹授权（沙盒）
+
+    private var folderAccessBanner: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "photo.badge.exclamationmark")
+                .foregroundColor(.secondary)
+                .accessibilityHidden(true)
+            Text(L.folderAccessBannerMessage(folder: baseURL?.lastPathComponent ?? ""))
+                .font(.system(size: 12))
+            Spacer()
+            Button(L.folderAccessBannerButton) { requestFolderAccess() }
+                .controlSize(.small)
+            Button {
+                folderAccessDismissed = true
+            } label: {
+                Image(systemName: "xmark")
+            }
+            .buttonStyle(.borderless)
+            .accessibilityLabel(L.dismiss)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(Color.accentColor.opacity(0.10))
+    }
+
+    private func updateFolderAccessNeeded() {
+        guard let baseURL, parsedDoc.blocks.contains(where: \.containsLocalImage) else {
+            folderAccessNeeded = false
+            return
+        }
+        folderAccessNeeded = FolderAccess.shared.needsAccess(to: baseURL)
+    }
+
+    private func requestFolderAccess() {
+        guard let baseURL else { return }
+        FolderAccess.shared.requestAccess(to: baseURL, from: NSApp.keyWindow) { _ in
+            updateFolderAccessNeeded()
+        }
     }
 
     // MARK: - 外部修改热重载

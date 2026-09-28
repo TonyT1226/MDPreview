@@ -103,6 +103,22 @@ extension MarkdownBlock {
         }
     }
 
+    /// 块内有指向本地文件的图片（相对路径、绝对路径或 file://），沙盒里要授权文件夹才能显示
+    var containsLocalImage: Bool {
+        switch self {
+        case .image(_, let source, _):
+            guard let source, !source.isEmpty else { return false }
+            let scheme = URL(string: source)?.scheme?.lowercased()
+            return scheme == nil || scheme == "file"
+        case .blockquote(_, let blocks):
+            return blocks.contains(where: \.containsLocalImage)
+        case .unorderedList(_, let items), .orderedList(_, _, let items), .taskList(_, let items):
+            return items.contains { $0.blocks.contains(where: \.containsLocalImage) }
+        default:
+            return false
+        }
+    }
+
     /// 渲染结果是否相同：忽略 id 和列表项的源行号（上方增删内容时它们会变，渲染出来的样子不变）
     func rendersSame(as other: MarkdownBlock) -> Bool {
         switch (self, other) {

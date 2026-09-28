@@ -94,8 +94,11 @@ struct ReaderTextRepresentable: NSViewRepresentable {
         NotificationCenter.default.addObserver(c, selector: #selector(Coordinator.boundsChanged(_:)),
                                                name: NSView.boundsDidChangeNotification,
                                                object: scrollView.contentView)
-        NotificationCenter.default.addObserver(c, selector: #selector(Coordinator.remoteImageLoaded(_:)),
+        NotificationCenter.default.addObserver(c, selector: #selector(Coordinator.reloadImages(_:)),
                                                name: RemoteImageCache.didLoad, object: nil)
+        // 沙盒里新授权了文件夹：本地图片可能能读了
+        NotificationCenter.default.addObserver(c, selector: #selector(Coordinator.reloadImages(_:)),
+                                               name: FolderAccess.didChange, object: nil)
         return scrollView
     }
 
@@ -204,7 +207,7 @@ struct ReaderTextRepresentable: NSViewRepresentable {
             }
         }
 
-        @objc func remoteImageLoaded(_ note: Notification) {
+        @objc func reloadImages(_ note: Notification) {
             guard let textView, let storage = textView.textStorage, let style = lastStyle else { return }
             let origin = scrollView?.contentView.bounds.origin ?? .zero
             let renderer = ReaderRenderer(style: style, baseURL: lastBaseURL, imageProvider: RemoteImageCache.shared)
@@ -236,12 +239,23 @@ struct ReaderTextRepresentable: NSViewRepresentable {
                 let path = url.path.removingPercentEncoding ?? url.path
                 resolved = URL(fileURLWithPath: path, relativeTo: base).standardizedFileURL
             }
-            if resolved.isFileURL, ["md", "markdown", "mdown", "mkd", "mkdn", "mdwn"].contains(resolved.pathExtension.lowercased()) {
-                NSDocumentController.shared.openDocument(withContentsOf: resolved, display: true) { _, _, _ in }
+            let directory = resolved.deletingLastPathComponent()
+            if resolved.isFileURL, FolderAccess.shared.needsAccess(to: directory) {
+                FolderAccess.shared.requestAccess(to: directory, from: textView.window) { granted in
+                    if granted { Self.open(resolved) }
+                }
             } else {
-                NSWorkspace.shared.open(resolved)
+                Self.open(resolved)
             }
             return true
+        }
+
+        private static func open(_ url: URL) {
+            if url.isFileURL, ["md", "markdown", "mdown", "mkd", "mkdn", "mdwn"].contains(url.pathExtension.lowercased()) {
+                NSDocumentController.shared.openDocument(withContentsOf: url, display: true) { _, _, _ in }
+            } else {
+                NSWorkspace.shared.open(url)
+            }
         }
 
         /// GitHub 风格锚点：小写、空格变 -、去掉标点
