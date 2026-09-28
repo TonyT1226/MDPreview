@@ -73,7 +73,7 @@ PDF export and printing; reload on external change; all UI text moved to one pla
 6. English and Chinese README.
 
 The DMG is still ad-hoc signed and not notarized (that needs an Apple Developer account),
-so the first launch needs right-click › Open.
+so the first launch needs an extra step (see [Install](#install)).
 
 **v1.4 — editing** (released as part of 1.5.0)
 Formatting shortcuts (`⌘B` / `⌘I` / `⌘K` / `⇧⌘K`); list continuation on Return and Tab indenting;
@@ -106,8 +106,20 @@ Inline images, math, HTML blocks, more accurate code highlighting, more language
 ## Install
 
 Download `MDPreview-<version>.dmg` (for example `MDPreview-1.5.0.dmg`) from [Releases](https://github.com/TonyT1226/MDPreview/releases)
-and drag `MDPreview.app` into Applications. The first time, open it with right-click › Open
-(the app is not notarized).
+and drag `MDPreview.app` into Applications.
+
+The app is not notarized, so macOS blocks the first launch:
+
+- **macOS 15 and later**: double-click MDPreview and close the warning. Open System Settings ›
+  Privacy & Security, scroll down to Security, click **Open Anyway** next to MDPreview, and
+  enter your password. After that it opens normally.
+- **macOS 14**: right-click MDPreview in Applications and choose Open.
+
+Or, in Terminal, remove the download quarantine flag once:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/MDPreview.app
+```
 
 The Finder preview extensions become active after the app is in Applications and has been
 opened once. If the space-bar preview still shows plain text, check that MDPreview is enabled

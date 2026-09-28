@@ -68,7 +68,7 @@ macOS 上的 Markdown 阅读 / 轻量编辑器。用 SwiftUI + AppKit + `apple/s
 5. 无障碍：VoiceOver 标签、增强对比度、减少动态效果。
 6. 中英文 README。
 
-DMG 仍是 ad-hoc 签名，没有公证（需要 Apple Developer 账号），首次打开要右键 › 打开。
+DMG 仍是 ad-hoc 签名，没有公证（需要 Apple Developer 账号），首次打开需要多一步（见[安装](#安装)）。
 
 **v1.4 — 编辑体验**（随 1.5.0 一起发布）
 格式快捷键（`⌘B` / `⌘I` / `⌘K` / `⇧⌘K`）；列表回车续写、Tab 缩进；粘贴 / 拖入图片自动存到 `assets/`；
@@ -100,7 +100,19 @@ DMG 仍是 ad-hoc 签名，没有公证（需要 Apple Developer 账号），首
 ## 安装
 
 从 [Releases](https://github.com/TonyT1226/MDPreview/releases) 下载 `MDPreview-<版本号>.dmg`（如 `MDPreview-1.5.0.dmg`），
-把 `MDPreview.app` 拖进「应用程序」。首次打开需要右键 › 打开（没有公证）。
+把 `MDPreview.app` 拖进「应用程序」。
+
+App 没有公证，第一次打开会被系统拦下：
+
+- **macOS 15 及以上**：双击 MDPreview，关掉提示框。打开「系统设置 › 隐私与安全性」，
+  往下翻到「安全性」，点 MDPreview 旁边的 **仍要打开**，输入密码。之后就能正常打开。
+- **macOS 14**：在「应用程序」里右键 MDPreview，选「打开」。
+
+也可以在终端里去掉下载隔离标记，只需要做一次：
+
+```bash
+xattr -dr com.apple.quarantine /Applications/MDPreview.app
+```
 
 Finder 预览扩展在 App 放进「应用程序」并打开过一次后生效。
 如果空格预览还是纯文本，到「系统设置 › 通用 › 登录项与扩展 › 快速查看」里确认 MDPreview 已勾选。
