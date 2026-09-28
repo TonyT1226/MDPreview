@@ -9,6 +9,8 @@ macOS 上的 Markdown 阅读 / 轻量编辑器。用 SwiftUI + AppKit + `apple/s
 
 当前版本：v1.5.0 · 运行需 macOS 14+ · MIT 许可
 
+![深色模式下的分屏视图，左侧是大纲](docs/screenshots/split-dark-zh.png)
+
 ---
 
 ## 功能
@@ -34,6 +36,21 @@ macOS 上的 Markdown 阅读 / 轻量编辑器。用 SwiftUI + AppKit + `apple/s
 - **无障碍**：VoiceOver 标签；「增强对比度」下边框更深；「减少动态效果」下不播动画。
 - **文档型 app**：多窗口、多标签、`.md` 文件关联、拖入打开。
 - macOS 26+ 使用 Liquid Glass 材质，更低版本回退到毛玻璃。
+
+## 截图
+
+![阅读视图和大纲侧栏](docs/screenshots/reader-zh.png)
+
+<table>
+  <tr>
+    <td width="60%"><img src="docs/screenshots/quicklook.png" alt="Finder 里的 Quick Look 预览"></td>
+    <td width="40%"><img src="docs/screenshots/settings.png" alt="偏好设置"></td>
+  </tr>
+  <tr>
+    <td align="center">Finder 里的 Quick Look 预览</td>
+    <td align="center">偏好设置</td>
+  </tr>
+</table>
 
 ## 版本规划
 

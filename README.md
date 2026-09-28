@@ -9,6 +9,8 @@ A Markdown reader and light editor for macOS. Written with SwiftUI, AppKit and
 
 Current version: v1.5.0 · Requires macOS 14+ · MIT license
 
+![Split view in dark mode, with the outline sidebar](docs/screenshots/split-dark.png)
+
 ---
 
 ## Features
@@ -38,6 +40,21 @@ Current version: v1.5.0 · Requires macOS 14+ · MIT license
   with Reduce Motion.
 - **Document-based app**: multiple windows and tabs, `.md` file association, drag a file in to open it.
 - Uses Liquid Glass on macOS 26+ and falls back to translucent materials on older systems.
+
+## Screenshots
+
+![Reading view with the outline sidebar](docs/screenshots/reader.png)
+
+<table>
+  <tr>
+    <td width="60%"><img src="docs/screenshots/quicklook.png" alt="Quick Look in Finder"></td>
+    <td width="40%"><img src="docs/screenshots/settings.png" alt="Settings"></td>
+  </tr>
+  <tr>
+    <td align="center">Quick Look in Finder</td>
+    <td align="center">Settings</td>
+  </tr>
+</table>
 
 ## Versions
 
