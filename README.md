@@ -151,6 +151,10 @@ sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for more.
 
+## Privacy
+
+MDPreview does not collect any data. See the [privacy policy](docs/PRIVACY.md).
+
 ## License
 
 [MIT](LICENSE)

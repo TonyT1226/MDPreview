@@ -143,6 +143,10 @@ sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
 
 更多细节见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
+## 隐私
+
+MDPreview 不收集任何数据，详见[隐私政策](docs/PRIVACY.zh-Hans.md)。
+
 ## 许可
 
 [MIT](LICENSE)
