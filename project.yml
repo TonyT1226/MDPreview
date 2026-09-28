@@ -28,6 +28,9 @@ targets:
     platform: macOS
     sources:
       - path: Sources/App
+      # 隐私清单（required-reason API：UserDefaults、stat/fstat）。三个 target 都链接 MDPreviewCore，都要带
+      - path: Sources/PrivacyInfo.xcprivacy
+        buildPhase: resources
     dependencies:
       - package: MDPreviewCore
         product: MDPreviewCore
@@ -62,6 +65,8 @@ targets:
     platform: macOS
     sources:
       - path: Sources/QuickLookPreview
+      - path: Sources/PrivacyInfo.xcprivacy
+        buildPhase: resources
     dependencies:
       - package: MDPreviewCore
         product: MDPreviewCore
@@ -98,6 +103,8 @@ targets:
     platform: macOS
     sources:
       - path: Sources/QuickLookThumbnail
+      - path: Sources/PrivacyInfo.xcprivacy
+        buildPhase: resources
     dependencies:
       - package: MDPreviewCore
         product: MDPreviewCore

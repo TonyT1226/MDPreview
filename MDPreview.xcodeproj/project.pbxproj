@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0EF6FCB70323BCC2DC0F7D47 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 806E3221B376352B4E5D2DC7 /* PrivacyInfo.xcprivacy */; };
 		238F7F9A5C5A51DB167249D1 /* MDPreviewApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9D8E2A7355F1DE4B6D160AA /* MDPreviewApp.swift */; };
 		428512D721A9553CA6A184D2 /* MDPreviewQuickLook.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = DED24AF6851260469A56F78A /* MDPreviewQuickLook.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		54AC6A392BD04DC1C7868BF5 /* PreviewViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC7E2143F95043D2A99B73DC /* PreviewViewController.swift */; };
@@ -17,8 +18,10 @@
 		A5B2A4D968BF3CE38C9C1B30 /* MDPreviewCore in Frameworks */ = {isa = PBXBuildFile; productRef = 5DE5D33A3A09BE253C350548 /* MDPreviewCore */; };
 		B310489518B68FAAEFBFCE6B /* ThumbnailProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF32B6333A1A5BF8BB7C0830 /* ThumbnailProvider.swift */; };
 		B3325FDCE5EA0F6848003919 /* MDPreviewCore in Frameworks */ = {isa = PBXBuildFile; productRef = 18BA92523BB775417C0A8F80 /* MDPreviewCore */; };
+		CA6EA900582EA89579277C2E /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 806E3221B376352B4E5D2DC7 /* PrivacyInfo.xcprivacy */; };
 		D68D1BD894D84AC9D7D68057 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0315CEB6C61FF75A4FFE10DB /* Assets.xcassets */; };
 		FB3BAF16967DCF04FD35E6BC /* MDPreviewCore in Frameworks */ = {isa = PBXBuildFile; productRef = D59E7CDCD20361FC2FA39736 /* MDPreviewCore */; };
+		FFCA8105C6049D7E658BA09B /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 806E3221B376352B4E5D2DC7 /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -60,6 +63,7 @@
 		675EC0F8445DA4E90BEBCFFB /* MDPreview.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MDPreview.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		67F39F95A16990B26501D757 /* MDPreview.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MDPreview.entitlements; sourceTree = "<group>"; };
 		79D75CD1CA01FC36D27E1EDF /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		806E3221B376352B4E5D2DC7 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		87452F6D47A307DC28F797EB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		AC7E2143F95043D2A99B73DC /* PreviewViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewViewController.swift; sourceTree = "<group>"; };
 		AF90FB5A41CF41D4B0FD33A8 /* QuickLookPreview.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = QuickLookPreview.entitlements; sourceTree = "<group>"; };
@@ -145,6 +149,7 @@
 		9E0B0ABDBE9484272EFCFF77 /* Sources */ = {
 			isa = PBXGroup;
 			children = (
+				806E3221B376352B4E5D2DC7 /* PrivacyInfo.xcprivacy */,
 				6C73D99003CAFF7E5AF63799 /* App */,
 				78601F0CFE5508FAD61718B0 /* QuickLookPreview */,
 				A398CDFB1E5826F7506DDABA /* QuickLookThumbnail */,
@@ -190,6 +195,7 @@
 			buildConfigurationList = 8F2AD83BFB3118D1BFDABC86 /* Build configuration list for PBXNativeTarget "MDPreviewQuickLook" */;
 			buildPhases = (
 				EC8DB2A91F4980756605E649 /* Sources */,
+				F3E83817EBB8EA725FDEC7D7 /* Resources */,
 				BBF85892E22E8757305710BD /* Frameworks */,
 			);
 			buildRules = (
@@ -232,6 +238,7 @@
 			buildConfigurationList = 35F583E8D96EB8EF48E5AA91 /* Build configuration list for PBXNativeTarget "MDPreviewThumbnail" */;
 			buildPhases = (
 				C47D0FE1E508638C4DCB2D6D /* Sources */,
+				7404DAC6C36E34EE20C5F1DA /* Resources */,
 				D0434E2E273936D8F981BC1B /* Frameworks */,
 			);
 			buildRules = (
@@ -295,12 +302,29 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		7404DAC6C36E34EE20C5F1DA /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0EF6FCB70323BCC2DC0F7D47 /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		8A227E56FB60DB4022D9A947 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				D68D1BD894D84AC9D7D68057 /* Assets.xcassets in Resources */,
 				819DC48C0BF7B1F9A3F2D5F4 /* InfoPlist.xcstrings in Resources */,
+				CA6EA900582EA89579277C2E /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F3E83817EBB8EA725FDEC7D7 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FFCA8105C6049D7E658BA09B /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
