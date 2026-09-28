@@ -45,7 +45,7 @@ find "$STAGE/${APP_NAME}.app" -exec xattr -c {} \; 2>/dev/null || true
 
 echo "🔏 ad-hoc 签名..."
 # Quick Look 扩展必须带沙盒 entitlements 签名，否则系统不加载；--deep 不会带上 entitlements，
-# 所以先逐个签扩展，再签外层 App（不用 --deep）。
+# 所以先逐个签扩展，再签外层 App（不用 --deep）。App 本身也开沙盒（v1.6 起，与 App Store 版同一份构建）。
 PLUGINS="$STAGE/${APP_NAME}.app/Contents/PlugIns"
 codesign --force --sign - --timestamp=none --options runtime \
   --entitlements "$REPO_ROOT/Sources/QuickLookPreview/QuickLookPreview.entitlements" \
@@ -53,7 +53,9 @@ codesign --force --sign - --timestamp=none --options runtime \
 codesign --force --sign - --timestamp=none --options runtime \
   --entitlements "$REPO_ROOT/Sources/QuickLookThumbnail/QuickLookThumbnail.entitlements" \
   "$PLUGINS/MDPreviewThumbnail.appex"
-codesign --force --sign - --timestamp=none --options runtime "$STAGE/${APP_NAME}.app"
+codesign --force --sign - --timestamp=none --options runtime \
+  --entitlements "$REPO_ROOT/Sources/App/MDPreview.entitlements" \
+  "$STAGE/${APP_NAME}.app"
 codesign --verify --deep --strict "$STAGE/${APP_NAME}.app"
 
 VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$STAGE/${APP_NAME}.app/Contents/Info.plist")

@@ -181,7 +181,7 @@ md-reader/
 | 核心单测 | `swift test`（swift-testing；解析 / 渲染 / 阅读视图交互 / 本地化 / 源码着色 / `FileMonitor` / 打印）。仓库在 iCloud 目录时加 `--scratch-path` 指到别处 |
 | 生成工程 | `brew install xcodegen && xcodegen generate` → `MDPreview.xcodeproj` |
 | 运行 / 预览 / 归档 | `open MDPreview.xcodeproj`（需完整版 Xcode，非 CLT） |
-| 打包 DMG | `./package_app.sh`：Release 免签构建 → `ditto` 到 `/tmp` 清扩展属性 → 两个扩展带 entitlements ad-hoc 签名 → 签 App → `hdiutil` 组 DMG |
+| 打包 DMG | `./package_app.sh`：Release 免签构建 → `ditto` 到 `/tmp` 清扩展属性 → 两个扩展带 entitlements ad-hoc 签名 → 带沙盒 entitlements 签 App → `hdiutil` 组 DMG |
 | CI | `.github/workflows/ci.yml`：`macos-15` 跑 `swift build` / `swift test` / `xcodebuild`（`CODE_SIGNING_ALLOWED=NO`） |
 | 分发 | DMG 不入库，作为 GitHub Release 附件；正式分发需 Developer ID + `notarytool` |
 
@@ -264,7 +264,9 @@ md-reader/
 | **1.6.9 商店资料** | 未做。截图（1280×800 / 1440×900 / 2560×1600 / 2880×1800）、中英文描述和关键词、隐私问卷选「不收集数据」、年龄分级、价格、地区。 |
 | **1.6.10 发布** | 未做。提交审核前，隐私政策的网址必须能打开，所以要先单独把隐私政策推到 main；审核通过后合并分支、推送、发 GitHub Release。 |
 
-待定：GitHub 上的 DMG 是否也开沙盒。倾向同一份构建，两边行为一致；代价是 DMG 用户也要授权文件夹。
+GitHub 上的 DMG 也开沙盒，和 App Store 版用同一份构建（2026-09-27 定）。DMG 用户同样要授权文件夹。`package_app.sh` 签 App 时已带上 `MDPreview.entitlements`。
+
+还要确认：从 1.5（没开沙盒）升级到 1.6 后，偏好设置在 `~/Library/Preferences`，沙盒版读的是容器里的那份，字体、主题等设置可能回到默认值。要在真实升级场景里验证；如果确实丢失，用 `container-migration.plist` 迁移。
 
 ### 暂不排期
 
