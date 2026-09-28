@@ -199,7 +199,7 @@ md-reader/
 | G14 | 代码块不横向滚动，长行折行显示；`NSTextBlock` 没有圆角 | 与 v1.2 的 SwiftUI 版观感不同 | 接受 |
 | G16 | Quick Look 扩展在沙盒里没有网络权限，远程图片显示占位；相对路径图片能否读到取决于系统授予的访问范围 | 预览图片不全 | 接受 |
 | G17 | 核心库静态链接进 App 和两个扩展，DMG 从约 3.6MB 变成约 7.5MB | 体积 | 暂不排期（可改成动态框架） |
-| G18 | 没有公证：DMG 仍是 ad-hoc 签名 | 首次打开要到「隐私与安全性」点「仍要打开」（macOS 14 可右键 › 打开） | 需要 Developer ID |
+| G18 | 没有公证：DMG 仍是 ad-hoc 签名 | 首次打开要到「隐私与安全性」点「仍要打开」（macOS 14 可右键 › 打开） | v1.6（需要 Developer 账号） |
 
 **v1.5 已解决**：~~G12 静默刷新标成「已编辑」、文件删后停止监听~~、~~G15 每次改动整篇重排~~。
 **v1.3 已解决**：~~G1 阅读区不能跨块选择 / 无 ⌘F~~、~~G2 无偏好设置~~、~~G3 编辑器无行号~~、
@@ -246,6 +246,25 @@ md-reader/
 
 性能（`MDP_PERF=1 swift test --filter PerfProbe`，Debug 构建，160KB 文档，视口在文档中部，改一个字）：
 整篇重排约 0.8 秒，增量更新约 30 毫秒。解析仍是整篇（约 180 毫秒），在后台线程，不占主线程。
+
+### v1.6 — 上架 Mac App Store（进行中，本地分支 `v1.6-sandbox`，上架前不推送）
+
+1.6.0 是第一个 App Store 版本。同一版本在 GitHub 发布经过公证的 DMG。
+
+| 项 | 状态 |
+| :-- | :-- |
+| **1.6.1 沙盒** ✅ | 主 App 开 App Sandbox：用户选择的文件读写、app-scope bookmark、网络客户端、打印（`Sources/App/MDPreview.entitlements`，在 `project.yml` 里声明）。 |
+| **1.6.2 文件夹授权** ✅ | 沙盒里只能访问打开的那个文件。`FolderAccess` 让用户在打开面板里选中文档所在文件夹（或其上级），存成 security-scoped bookmark，启动时恢复。用在三处：文档有本地图片时窗口顶部的提示条、点击指向本地文件的链接、粘贴图片写 `assets/`。设置里「文件夹访问」可查看、移除（只在沙盒版显示）。不在沙盒里时不做任何事。已在真实沙盒构建里验证：授权后图片显示、链接能打开、重启后授权仍在。 |
+| **1.6.3 监听回退** ✅ | 沙盒里打不开文档所在目录，`FileMonitor` 在文件被删后改为每秒检查一次。 |
+| **1.6.4 商店字段** ✅ | `Info.plist`：`LSApplicationCategoryType`（productivity）、`ITSAppUsesNonExemptEncryption = false`。 |
+| **1.6.5 隐私清单** ✅ | `Sources/PrivacyInfo.xcprivacy` 打进 App 和两个扩展：不跟踪、不收集数据；required-reason API：`UserDefaults`（CA92.1）、`stat` / `fstat`（3B52.1）。依赖库没有用到这类 API。 |
+| **1.6.6 隐私政策** ✅ | `docs/PRIVACY.md` / `docs/PRIVACY.zh-Hans.md`，README 链接。 |
+| **1.6.7 开发者账号** | 未做。注册 Apple Developer Program；确定最终 Bundle ID（现为 `com.mdpreview.app`，建记录后不能改），扩展 ID 跟着改。 |
+| **1.6.8 归档上传** | 未做。`xcodebuild archive` + `-exportArchive`（App Store Connect），路径放到 `/tmp` 避开 iCloud 扩展属性；Developer ID 签名 + `notarytool` 公证 DMG。 |
+| **1.6.9 商店资料** | 未做。截图（1280×800 / 1440×900 / 2560×1600 / 2880×1800）、中英文描述和关键词、隐私问卷选「不收集数据」、年龄分级、价格、地区。 |
+| **1.6.10 发布** | 未做。提交审核前，隐私政策的网址必须能打开，所以要先单独把隐私政策推到 main；审核通过后合并分支、推送、发 GitHub Release。 |
+
+待定：GitHub 上的 DMG 是否也开沙盒。倾向同一份构建，两边行为一致；代价是 DMG 用户也要授权文件夹。
 
 ### 暂不排期
 

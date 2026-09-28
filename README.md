@@ -84,6 +84,10 @@ The reading view re-renders only the blocks that changed. On a 160 KB document, 
 takes about 30 ms instead of about 0.8 s. Reloading after an external change no longer marks the
 document as edited, and a deleted file that comes back is watched again.
 
+**v1.6 (in progress) — Mac App Store**
+Release on the Mac App Store, plus a notarized DMG. The app runs in the sandbox: before it shows local
+images or opens linked files, it asks you to allow access to the document's folder.
+
 **Later**
 Inline images, math, HTML blocks, more accurate code highlighting, more languages.
 
