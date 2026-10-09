@@ -94,7 +94,7 @@ if [ -n "$IDENTITY" ]; then
     xcrun stapler staple "$DMG"
     spctl --assess --type open --context context:primary-signature -v "$DMG"
   else
-    echo "⚠️  没有 notarytool 凭据「$NOTARY_PROFILE」，跳过公证（见脚本开头的说明）"
+    echo "⚠️  没有 notarytool 凭据「${NOTARY_PROFILE}」，跳过公证（见脚本开头的说明）"
   fi
 fi
 

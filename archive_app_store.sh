@@ -41,13 +41,14 @@ xcodebuild \
   -derivedDataPath "$STAGE/derived" \
   -archivePath "$ARCHIVE" \
   -allowProvisioningUpdates \
+  -quiet \
   ${BUILD_ARGS[@]+"${BUILD_ARGS[@]}"} \
   archive
 
 INFO="$ARCHIVE/Products/Applications/${APP_NAME}.app/Contents/Info.plist"
 VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$INFO")
 BUILD=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$INFO")
-echo "🔖 版本：$VERSION（$BUILD）"
+echo "🔖 版本：${VERSION}（${BUILD}）"
 
 cat > "$STAGE/ExportOptions.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
