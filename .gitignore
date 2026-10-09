@@ -19,6 +19,8 @@ MDPreview [0-9]*.xcodeproj/
 *.app/
 *.zip
 *.dmg
+*.pkg
+*.xcarchive/
 *.dSYM/
 
 # OS generated files
