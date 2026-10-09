@@ -28,6 +28,12 @@ targets:
     platform: macOS
     sources:
       - path: Sources/App
+        excludes:
+          - AppIcon.icon
+      # Icon Composer 图标（Liquid Glass）。XcodeGen 会把 .icon 当成普通文件夹，所以单独按文件加入
+      - path: Sources/App/AppIcon.icon
+        type: file
+        buildPhase: resources
       # 隐私清单（required-reason API：UserDefaults、stat/fstat）。三个 target 都链接 MDPreviewCore，都要带
       - path: Sources/PrivacyInfo.xcprivacy
         buildPhase: resources

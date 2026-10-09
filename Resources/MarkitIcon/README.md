@@ -32,4 +32,6 @@
 5. M 所在的组：打开 Liquid Glass，Mode 选 Individual。调 Translucency，让笔迹从 M 后面透出一点，以 M 仍然清楚为准。Specular（高光）打开，Shadow 选 Neutral 或 Chromatic。
 6. 笔迹所在的组：可以关掉 Liquid Glass，或者保留但把 Translucency 调到 0，让它是一块实色。
 7. 在右上角切换 Default、Dark、Mono 三种外观，各看一遍。深色下背景会变暗，需要的话给深色外观单独设背景色（比如 `#1C2433` 到 `#0E131C`）。
-8. 存成 `AppIcon.icon`，放到 `Sources/App/` 下。之后告诉 Claude，由它接进工程并替换旧图标。
+8. 存成 `.icon` 文件。工程里用的是 `Sources/App/AppIcon.icon`（在 `project.yml` 里按文件加入），改图标时直接用 Icon Composer 打开它。
+
+`Resources/AppIcon.png` 是从 Icon Composer 导出的 1024 像素图，README 里用。
