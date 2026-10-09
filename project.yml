@@ -47,7 +47,8 @@ targets:
         com.apple.security.print: true
     settings:
       base:
-        PRODUCT_NAME: MDPreview
+        # 用户看到的名字是 Markit（v1.6 改名）；工程、target、模块名仍叫 MDPreview
+        PRODUCT_NAME: Markit
         PRODUCT_BUNDLE_IDENTIFIER: com.mdpreview.app
         INFOPLIST_FILE: Sources/App/Info.plist
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
@@ -74,7 +75,7 @@ targets:
     info:
       path: Sources/QuickLookPreview/Info.plist
       properties:
-        CFBundleDisplayName: MDPreview Quick Look
+        CFBundleDisplayName: Markit Quick Look
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         LSMinimumSystemVersion: $(MACOSX_DEPLOYMENT_TARGET)
@@ -112,7 +113,7 @@ targets:
     info:
       path: Sources/QuickLookThumbnail/Info.plist
       properties:
-        CFBundleDisplayName: MDPreview Thumbnail
+        CFBundleDisplayName: Markit Thumbnail
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         LSMinimumSystemVersion: $(MACOSX_DEPLOYMENT_TARGET)

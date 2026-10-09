@@ -296,13 +296,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Local images in this document can’t be shown until MDPreview is allowed to access the folder “%@”."
+            "value": "Local images in this document can’t be shown until Markit is allowed to access the folder “%@”."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "允许 MDPreview 访问「%@」文件夹后，才能显示此文档中的本地图片。"
+            "value": "允许 Markit 访问「%@」文件夹后，才能显示此文档中的本地图片。"
           }
         }
       }
@@ -950,13 +950,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "MDPreview can read these folders to show local images, open linked documents and save pasted images."
+            "value": "Markit can read these folders to show local images, open linked documents and save pasted images."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "MDPreview 可以读取这些文件夹，用来显示本地图片、打开链接到的文档、保存粘贴的图片。"
+            "value": "Markit 可以读取这些文件夹，用来显示本地图片、打开链接到的文档、保存粘贴的图片。"
           }
         }
       }

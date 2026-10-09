@@ -251,6 +251,10 @@ md-reader/
 
 1.6.0 是第一个 App Store 版本。同一版本在 GitHub 发布经过公证的 DMG。
 
+改名：从 1.6 起 App 叫 **Markit**（「MDPreview」在 App Store 已被占用，而且 App 不只是预览）。商店名称 `Markit: Simple Markdown Editor`。
+改的是用户看得到的名字：`PRODUCT_NAME`（`Markit.app`）、显示名、两个扩展的显示名、界面文字、README、隐私政策、DMG / pkg 文件名。
+没改的：Bundle ID（`com.mdpreview.app`）、工程 / target / scheme 名、`MDPreviewCore` 模块名、本文档其余部分的叫法。GitHub 仓库名在发布当天改。
+
 | 项 | 状态 |
 | :-- | :-- |
 | **1.6.1 沙盒** ✅ | 主 App 开 App Sandbox：用户选择的文件读写、app-scope bookmark、网络客户端、打印（`Sources/App/MDPreview.entitlements`，在 `project.yml` 里声明）。 |
@@ -259,7 +263,7 @@ md-reader/
 | **1.6.4 商店字段** ✅ | `Info.plist`：`LSApplicationCategoryType`（productivity）、`ITSAppUsesNonExemptEncryption = false`。 |
 | **1.6.5 隐私清单** ✅ | `Sources/PrivacyInfo.xcprivacy` 打进 App 和两个扩展：不跟踪、不收集数据；required-reason API：`UserDefaults`（CA92.1）、`stat` / `fstat`（3B52.1）。依赖库没有用到这类 API。 |
 | **1.6.6 隐私政策** ✅ | `docs/PRIVACY.md` / `docs/PRIVACY.zh-Hans.md`，README 链接。 |
-| **1.6.7 开发者账号** | 账号已开通（2026-10-09），Team ID 写进 `project.yml`。Bundle ID 保持 `com.mdpreview.app`。还要在 Xcode › Settings › Accounts 登录账号，生成证书。 |
+| **1.6.7 开发者账号** | 账号已开通（2026-10-09），Team ID 写进 `project.yml`。Bundle ID 保持 `com.mdpreview.app`，App Store Connect 记录已建（Apple ID 6821136481）。Developer ID 证书已有；Apple Distribution / Mac Installer Distribution 证书还要确认。 |
 | **1.6.8 归档上传** | 脚本已写，等证书到位后实跑。`archive_app_store.sh`：`xcodebuild archive` + `-exportArchive`（app-store-connect，自动签名），产物在 `/tmp`，导出 `.pkg`；`--upload` 直接上传。`package_app.sh`：有 Developer ID 证书时用它签名，存过 `notarytool` 凭据时自动公证并 staple；都没有时仍是 ad-hoc。版本号已改 1.6.0。 |
 | **1.6.9 商店资料** | 未做。截图（1280×800 / 1440×900 / 2560×1600 / 2880×1800）、中英文描述和关键词、隐私问卷选「不收集数据」、年龄分级、价格、地区。 |
 | **1.6.10 发布** | 未做。提交审核前，隐私政策的网址必须能打开，所以要先单独把隐私政策推到 main；审核通过后合并分支、推送、发 GitHub Release。 |

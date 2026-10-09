@@ -4,13 +4,14 @@ set -euo pipefail
 # 归档并导出 Mac App Store 用的安装包（.pkg）；加 --upload 时直接上传到 App Store Connect。
 # 依赖：完整版 Xcode、xcodegen；Xcode › Settings › Accounts 里登录了开发者账号（自动签名要用）。
 #
-#   ./archive_app_store.sh              只导出，产物在仓库根目录的 MDPreview-<版本号>-<构建号>.pkg
+#   ./archive_app_store.sh              只导出，产物在仓库根目录的 Markit-<版本号>-<构建号>.pkg
 #   ./archive_app_store.sh --upload     导出后上传
 #   BUILD_NUMBER=2 ./archive_app_store.sh --upload    同一版本号再传一次时，构建号要比上次大
 #
 # 归档和中间产物都放在 /tmp：仓库在 iCloud 同步目录里，产物带扩展属性会让 codesign 失败（见 package_app.sh）。
 
-APP_NAME="MDPreview"
+APP_NAME="Markit"          # 产物名（.app / .dmg / .pkg）
+PROJECT_NAME="MDPreview"   # 工程与 scheme 名，没有跟着改
 REPO_ROOT="$(cd "$(dirname "$0")" && pwd)"
 STAGE="$(mktemp -d /tmp/mdp_archive.XXXXXX)"
 trap 'rm -rf "$STAGE"' EXIT
@@ -23,7 +24,7 @@ command -v xcodegen >/dev/null || { echo "❌ 需要 xcodegen：brew install xco
 echo "🧩 生成 Xcode 工程..."
 ( cd "$REPO_ROOT" && xcodegen generate )
 
-TEAM_ID=$(xcodebuild -project "$REPO_ROOT/${APP_NAME}.xcodeproj" -scheme "$APP_NAME" -showBuildSettings 2>/dev/null \
+TEAM_ID=$(xcodebuild -project "$REPO_ROOT/${PROJECT_NAME}.xcodeproj" -scheme "$PROJECT_NAME" -showBuildSettings 2>/dev/null \
   | awk '$1 == "DEVELOPMENT_TEAM" { print $3; exit }')
 [ -n "$TEAM_ID" ] || { echo "❌ project.yml 里没有 DEVELOPMENT_TEAM"; exit 1; }
 
@@ -33,8 +34,8 @@ BUILD_ARGS=()
 echo "📦 归档（Release，自动签名）..."
 ARCHIVE="$STAGE/${APP_NAME}.xcarchive"
 xcodebuild \
-  -project "$REPO_ROOT/${APP_NAME}.xcodeproj" \
-  -scheme "$APP_NAME" \
+  -project "$REPO_ROOT/${PROJECT_NAME}.xcodeproj" \
+  -scheme "$PROJECT_NAME" \
   -configuration Release \
   -destination "generic/platform=macOS" \
   -derivedDataPath "$STAGE/derived" \

@@ -106,7 +106,7 @@ public enum L {
     public static let prefsSourceHighlighting = String(localized: "prefsSourceHighlighting", defaultValue: "Markdown syntax coloring", bundle: .module, comment: "Settings toggle")
     public static let prefsSourceHighlightingHint = String(localized: "prefsSourceHighlightingHint", defaultValue: "Colors headings, emphasis, code, links and other syntax in the editor.", bundle: .module, comment: "Settings hint")
     public static let prefsFolderAccess = String(localized: "prefsFolderAccess", defaultValue: "Folder Access", bundle: .module, comment: "Settings section")
-    public static let prefsFolderAccessHint = String(localized: "prefsFolderAccessHint", defaultValue: "MDPreview can read these folders to show local images, open linked documents and save pasted images.", bundle: .module, comment: "Settings hint")
+    public static let prefsFolderAccessHint = String(localized: "prefsFolderAccessHint", defaultValue: "Markit can read these folders to show local images, open linked documents and save pasted images.", bundle: .module, comment: "Settings hint")
     public static let prefsFolderAccessEmpty = String(localized: "prefsFolderAccessEmpty", defaultValue: "No folders yet", bundle: .module, comment: "Settings empty list")
     public static let prefsFolderAccessRemove = String(localized: "prefsFolderAccessRemove", defaultValue: "Remove", bundle: .module, comment: "Settings button")
     public static let prefsRestoreDefaults = String(localized: "prefsRestoreDefaults", defaultValue: "Restore Defaults", bundle: .module, comment: "Settings button")
@@ -141,7 +141,7 @@ public enum L {
         String(localized: "folderAccessPanelMessage", defaultValue: "To show images and open linked files, select the folder “\(folder)” and click Allow Access. You can also select a folder that contains it.", bundle: .module, comment: "Open panel message; the argument is a folder name")
     }
     public static func folderAccessBannerMessage(folder: String) -> String {
-        String(localized: "folderAccessBannerMessage", defaultValue: "Local images in this document can’t be shown until MDPreview is allowed to access the folder “\(folder)”.", bundle: .module, comment: "Banner; the argument is a folder name")
+        String(localized: "folderAccessBannerMessage", defaultValue: "Local images in this document can’t be shown until Markit is allowed to access the folder “\(folder)”.", bundle: .module, comment: "Banner; the argument is a folder name")
     }
     static let exportPDFDocumentStem = String(localized: "exportPDFDocumentStem", defaultValue: "Document", bundle: .module, comment: "Default PDF file name when the document has no title")
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-# 打包 MDPreview.app 与 MDPreview-<版本号>.dmg
+# 打包 Markit.app 与 Markit-<版本号>.dmg
 # 依赖：完整版 Xcode、xcodegen
 #
 # 说明：仓库通常放在 iCloud / 文件提供程序同步的目录里，构建产物会被打上
@@ -14,9 +14,11 @@ set -euo pipefail
 #     xcrun notarytool store-credentials MDPreview-notary --apple-id <Apple ID> --team-id <Team ID>
 #   （会要求输入 App 专用密码，在 account.apple.com › 登录与安全 里生成）
 #   凭据名可用环境变量 NOTARY_PROFILE 改。
+#   ADHOC=1 ./package_app.sh 强制 ad-hoc 签名（本地试包用，不公证）。
 # Mac App Store 的包走另一个脚本：archive_app_store.sh
 
-APP_NAME="MDPreview"
+APP_NAME="Markit"          # 产物名（.app / .dmg / .pkg）
+PROJECT_NAME="MDPreview"   # 工程与 scheme 名，没有跟着改
 REPO_ROOT="$(cd "$(dirname "$0")" && pwd)"
 DERIVED="$REPO_ROOT/.xcbuild"
 STAGE="$(mktemp -d /tmp/mdp_pkg.XXXXXX)"
@@ -30,8 +32,8 @@ echo "🧩 生成 Xcode 工程..."
 echo "📦 构建 Release（暂不签名）..."
 rm -rf "$DERIVED"
 xcodebuild \
-  -project "$REPO_ROOT/${APP_NAME}.xcodeproj" \
-  -scheme "$APP_NAME" \
+  -project "$REPO_ROOT/${PROJECT_NAME}.xcodeproj" \
+  -scheme "$PROJECT_NAME" \
   -configuration Release \
   -derivedDataPath "$DERIVED" \
   CODE_SIGNING_ALLOWED=NO \
@@ -46,12 +48,16 @@ xattr -cr "$STAGE/${APP_NAME}.app"
 find "$STAGE/${APP_NAME}.app" -exec xattr -c {} \; 2>/dev/null || true
 
 NOTARY_PROFILE="${NOTARY_PROFILE:-MDPreview-notary}"
-IDENTITY=$(security find-identity -v -p codesigning | sed -n 's/.*"\(Developer ID Application: [^"]*\)".*/\1/p' | head -1)
+if [ "${ADHOC:-0}" = 1 ]; then
+  IDENTITY=""
+else
+  IDENTITY=$(security find-identity -v -p codesigning | sed -n 's/.*"\(Developer ID Application: [^"]*\)".*/\1/p' | head -1)
+fi
 if [ -n "$IDENTITY" ]; then
   echo "🔏 用 $IDENTITY 签名..."
   SIGN_ARGS=(--sign "$IDENTITY" --timestamp)
 else
-  echo "🔏 没找到 Developer ID 证书，ad-hoc 签名..."
+  echo "🔏 ad-hoc 签名（没有 Developer ID 证书，或设了 ADHOC=1）..."
   SIGN_ARGS=(--sign - --timestamp=none)
 fi
 # Quick Look 扩展必须带沙盒 entitlements 签名，否则系统不加载；--deep 不会带上 entitlements，
