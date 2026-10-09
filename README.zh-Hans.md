@@ -5,7 +5,7 @@
 [English](README.md) · 简体中文
 
 macOS 上的 Markdown 阅读 / 轻量编辑器。用 SwiftUI + AppKit + `apple/swift-markdown` 写成，
-不带 WebView。v1.6 之前叫 MDPreview。
+不带 WebView。v2.0 之前叫 MDPreview。
 
 当前版本：v1.5.0 · 运行需 macOS 14+ · MIT 许可
 
@@ -78,7 +78,8 @@ DMG 仍是 ad-hoc 签名，没有公证（需要 Apple Developer 账号），首
 阅读区只重新渲染改动的块。160KB 文档改一个字，阅读区更新从约 0.8 秒降到约 30 毫秒。
 外部修改刷新后不再标成「已编辑」；文件被删后又出现时，继续监听。
 
-**v1.6（进行中）— Mac App Store**
+**v2.0（进行中）— Markit，Mac App Store**
+从 MDPreview 改名为 Markit。
 上架 Mac App Store，同时发布经过公证的 DMG。App 在沙盒里运行，显示本地图片、打开链接的文件前，会请你允许访问文档所在的文件夹。
 
 **以后**
@@ -102,7 +103,7 @@ DMG 仍是 ad-hoc 签名，没有公证（需要 Apple Developer 账号），首
 
 ## 安装
 
-从 [Releases](https://github.com/TonyT1226/MDPreview/releases) 下载 `Markit-<版本号>.dmg`（如 `Markit-1.6.0.dmg`），
+从 [Releases](https://github.com/TonyT1226/MDPreview/releases) 下载 `Markit-<版本号>.dmg`（如 `Markit-2.0.0.dmg`），
 把 `Markit.app` 拖进「应用程序」。
 
 App 没有公证，第一次打开会被系统拦下：

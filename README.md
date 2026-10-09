@@ -5,7 +5,7 @@
 English · [简体中文](README.zh-Hans.md)
 
 A Markdown reader and light editor for macOS. Written with SwiftUI, AppKit and
-`apple/swift-markdown`. No WebView. Called MDPreview before v1.6.
+`apple/swift-markdown`. No WebView. Called MDPreview before v2.0.
 
 Current version: v1.5.0 · Requires macOS 14+ · MIT license
 
@@ -84,7 +84,8 @@ The reading view re-renders only the blocks that changed. On a 160 KB document, 
 takes about 30 ms instead of about 0.8 s. Reloading after an external change no longer marks the
 document as edited, and a deleted file that comes back is watched again.
 
-**v1.6 (in progress) — Mac App Store**
+**v2.0 (in progress) — Markit, Mac App Store**
+Renamed from MDPreview to Markit.
 Release on the Mac App Store, plus a notarized DMG. The app runs in the sandbox: before it shows local
 images or opens linked files, it asks you to allow access to the document's folder.
 
@@ -109,7 +110,7 @@ Inline images, math, HTML blocks, more accurate code highlighting, more language
 
 ## Install
 
-Download `Markit-<version>.dmg` (for example `Markit-1.6.0.dmg`) from [Releases](https://github.com/TonyT1226/MDPreview/releases)
+Download `Markit-<version>.dmg` (for example `Markit-2.0.0.dmg`) from [Releases](https://github.com/TonyT1226/MDPreview/releases)
 and drag `Markit.app` into Applications.
 
 The app is not notarized, so macOS blocks the first launch:
