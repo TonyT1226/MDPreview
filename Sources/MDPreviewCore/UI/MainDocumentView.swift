@@ -13,6 +13,17 @@ public struct MainDocumentView: View {
     @State private var parsedDoc = ParsedDocument()
     @State private var parseTask: Task<Void, Never>?
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
+    @State private var splitFraction: CGFloat = 0.5
+
+    static let minPaneWidth: CGFloat = 300
+    static let sidebarMinWidth: CGFloat = 180
+    static let minWindowHeight: CGFloat = 500
+
+    /// 窗口最小宽度：分屏时要放得下两栏，侧边栏开着时再加上它
+    static func minWindowWidth(viewMode: ViewMode, showTOC: Bool) -> CGFloat {
+        guard viewMode == .split else { return 700 }
+        return minPaneWidth * 2 + 1 + (showTOC ? sidebarMinWidth : 0)
+    }
 
     // 外部修改热重载
     @State private var monitor: FileMonitor?
@@ -47,7 +58,7 @@ public struct MainDocumentView: View {
                 targetScrollId: $state.targetScrollId,
                 activeId: state.activeHeadingId
             )
-            .navigationSplitViewColumnWidth(min: 180, ideal: 220, max: 320)
+            .navigationSplitViewColumnWidth(min: Self.sidebarMinWidth, ideal: 220, max: 320)
         } detail: {
             ZStack(alignment: .bottomTrailing) {
                 VStack(spacing: 0) {
@@ -74,6 +85,8 @@ public struct MainDocumentView: View {
             }
         }
         .navigationSplitViewStyle(.balanced)
+        .frame(minWidth: Self.minWindowWidth(viewMode: state.viewMode, showTOC: state.showTOC),
+               minHeight: Self.minWindowHeight)
         .focusedSceneValue(\.editorState, state)
         .focusedSceneValue(\.printableDocument, PrintableDocument(
             parsed: parsedDoc,
@@ -126,9 +139,10 @@ public struct MainDocumentView: View {
         case .editing:
             editor
         case .split:
-            HSplitView {
-                editor.frame(minWidth: 320)
-                reader.frame(minWidth: 320)
+            SplitPane(fraction: $splitFraction, minPaneWidth: Self.minPaneWidth) {
+                editor
+            } right: {
+                reader
             }
         }
     }

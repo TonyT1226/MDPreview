@@ -28,7 +28,6 @@ struct MDPreviewApp: App {
     var body: some Scene {
         DocumentGroup(newDocument: MarkdownDocument()) { file in
             MainDocumentView(document: file.$document, fileURL: file.fileURL)
-                .frame(minWidth: 700, minHeight: 500)
         }
         .windowToolbarStyle(.unified)
         .commands {
