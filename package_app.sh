@@ -37,6 +37,7 @@ xcodebuild \
   -configuration Release \
   -derivedDataPath "$DERIVED" \
   CODE_SIGNING_ALLOWED=NO \
+  -quiet \
   build
 
 BUILT="$DERIVED/Build/Products/Release/${APP_NAME}.app"
