@@ -31,3 +31,7 @@ MDPreview [0-9]*.xcodeproj/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# 内部资料（商店文案、审核往来、协作笔记），不公开
+internal/
+CLAUDE.md
