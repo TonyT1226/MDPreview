@@ -1,11 +1,11 @@
-# MDPreview
+# Markit
 
-<img src="Resources/AppIcon.png" alt="MDPreview" width="96" align="right">
+<img src="Resources/AppIcon.png" alt="Markit" width="96" align="right">
 
 [English](README.md) · 简体中文
 
 macOS 上的 Markdown 阅读 / 轻量编辑器。用 SwiftUI + AppKit + `apple/swift-markdown` 写成，
-不带 WebView。
+不带 WebView。v2.0 之前叫 MDPreview。
 
 当前版本：v1.5.0 · 运行需 macOS 14+ · MIT 许可
 
@@ -21,7 +21,7 @@ macOS 上的 Markdown 阅读 / 轻量编辑器。用 SwiftUI + AppKit + `apple/s
   有序 / 无序 / 嵌套列表、任务清单、表格、分割线、图片（本地和网络）。
 - **代码高亮**：Swift、Python、JavaScript / TypeScript、JSON、Shell、Rust、Go。
 - **目录大纲**：自动从 H1–H6 生成，可折叠，点击跳转，滚动时高亮当前章节。
-- **链接**：`#标题` 锚点在文内跳转；相对路径的 `.md` 链接在 MDPreview 里打开。
+- **链接**：`#标题` 锚点在文内跳转；相对路径的 `.md` 链接在 Markit 里打开。
 - **任务清单**：在阅读视图里勾选复选框，改动写回源文件。
 - **编辑器**：基于 TextKit 2，带行号；可在偏好设置里打开 Markdown 源码着色。
 - **编辑辅助**：`⌘B` / `⌘I` / `⌘K` / `⇧⌘K` 加粗 / 斜体 / 链接 / 行内代码；回车自动续写列表，
@@ -78,6 +78,10 @@ DMG 仍是 ad-hoc 签名，没有公证（需要 Apple Developer 账号），首
 阅读区只重新渲染改动的块。160KB 文档改一个字，阅读区更新从约 0.8 秒降到约 30 毫秒。
 外部修改刷新后不再标成「已编辑」；文件被删后又出现时，继续监听。
 
+**v2.0（进行中）— Markit，Mac App Store**
+从 MDPreview 改名为 Markit。
+上架 Mac App Store，同时发布经过公证的 DMG。App 在沙盒里运行，显示本地图片、打开链接的文件前，会请你允许访问文档所在的文件夹。
+
 **以后**
 行内图片、数学公式、HTML 块、更严谨的代码高亮、更多语言。
 
@@ -99,23 +103,23 @@ DMG 仍是 ad-hoc 签名，没有公证（需要 Apple Developer 账号），首
 
 ## 安装
 
-从 [Releases](https://github.com/TonyT1226/MDPreview/releases) 下载 `MDPreview-<版本号>.dmg`（如 `MDPreview-1.5.0.dmg`），
-把 `MDPreview.app` 拖进「应用程序」。
+从 [Releases](https://github.com/TonyT1226/MDPreview/releases) 下载 `Markit-<版本号>.dmg`（如 `Markit-2.0.0.dmg`），
+把 `Markit.app` 拖进「应用程序」。
 
 App 没有公证，第一次打开会被系统拦下：
 
-- **macOS 15 及以上**：双击 MDPreview，关掉提示框。打开「系统设置 › 隐私与安全性」，
-  往下翻到「安全性」，点 MDPreview 旁边的 **仍要打开**，输入密码。之后就能正常打开。
-- **macOS 14**：在「应用程序」里右键 MDPreview，选「打开」。
+- **macOS 15 及以上**：双击 Markit，关掉提示框。打开「系统设置 › 隐私与安全性」，
+  往下翻到「安全性」，点 Markit 旁边的 **仍要打开**，输入密码。之后就能正常打开。
+- **macOS 14**：在「应用程序」里右键 Markit，选「打开」。
 
 也可以在终端里去掉下载隔离标记，只需要做一次：
 
 ```bash
-xattr -dr com.apple.quarantine /Applications/MDPreview.app
+xattr -dr com.apple.quarantine /Applications/Markit.app
 ```
 
 Finder 预览扩展在 App 放进「应用程序」并打开过一次后生效。
-如果空格预览还是纯文本，到「系统设置 › 通用 › 登录项与扩展 › 快速查看」里确认 MDPreview 已勾选。
+如果空格预览还是纯文本，到「系统设置 › 通用 › 登录项与扩展 › 快速查看」里确认 Markit 已勾选。
 
 ## 从源码构建
 
@@ -142,6 +146,10 @@ sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
 ```
 
 更多细节见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+
+## 隐私
+
+Markit 不收集任何数据，详见[隐私政策](docs/PRIVACY.zh-Hans.md)。
 
 ## 许可
 

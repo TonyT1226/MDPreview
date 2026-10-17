@@ -13,6 +13,17 @@ public struct MainDocumentView: View {
     @State private var parsedDoc = ParsedDocument()
     @State private var parseTask: Task<Void, Never>?
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
+    @State private var splitFraction: CGFloat = 0.5
+
+    static let minPaneWidth: CGFloat = 300
+    static let sidebarMinWidth: CGFloat = 180
+    static let minWindowHeight: CGFloat = 500
+
+    /// 窗口最小宽度：分屏时要放得下两栏，侧边栏开着时再加上它
+    static func minWindowWidth(viewMode: ViewMode, showTOC: Bool) -> CGFloat {
+        guard viewMode == .split else { return 700 }
+        return minPaneWidth * 2 + 1 + (showTOC ? sidebarMinWidth : 0)
+    }
 
     // 外部修改热重载
     @State private var monitor: FileMonitor?
@@ -20,6 +31,10 @@ public struct MainDocumentView: View {
     @State private var conflictDiskText: String?
     @State private var showConflict = false
     @State private var fileMissing = false
+
+    // 沙盒：文档旁的本地图片需要授权文件夹
+    @State private var folderAccessNeeded = false
+    @State private var folderAccessDismissed = false
 
     public init(document: Binding<MarkdownDocument>, fileURL: URL? = nil) {
         self._document = document
@@ -43,11 +58,12 @@ public struct MainDocumentView: View {
                 targetScrollId: $state.targetScrollId,
                 activeId: state.activeHeadingId
             )
-            .navigationSplitViewColumnWidth(min: 180, ideal: 220, max: 320)
+            .navigationSplitViewColumnWidth(min: Self.sidebarMinWidth, ideal: 220, max: 320)
         } detail: {
             ZStack(alignment: .bottomTrailing) {
                 VStack(spacing: 0) {
                     if fileMissing { fileMissingBanner }
+                    if folderAccessNeeded && !folderAccessDismissed { folderAccessBanner }
                     mainContentView
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
@@ -69,6 +85,8 @@ public struct MainDocumentView: View {
             }
         }
         .navigationSplitViewStyle(.balanced)
+        .frame(minWidth: Self.minWindowWidth(viewMode: state.viewMode, showTOC: state.showTOC),
+               minHeight: Self.minWindowHeight)
         .focusedSceneValue(\.editorState, state)
         .focusedSceneValue(\.printableDocument, PrintableDocument(
             parsed: parsedDoc,
@@ -78,6 +96,11 @@ public struct MainDocumentView: View {
         .onAppear { scheduleParse(text: document.text, immediate: true) }
         .onChange(of: fileURL, initial: true) { _, url in
             setupMonitor(for: url)
+            updateFolderAccessNeeded()
+        }
+        .onChange(of: parsedDoc.blocks) { _, _ in updateFolderAccessNeeded() }
+        .onReceive(NotificationCenter.default.publisher(for: FolderAccess.didChange)) { _ in
+            updateFolderAccessNeeded()
         }
         .onDisappear {
             monitor?.stop()
@@ -116,9 +139,10 @@ public struct MainDocumentView: View {
         case .editing:
             editor
         case .split:
-            HSplitView {
-                editor.frame(minWidth: 320)
-                reader.frame(minWidth: 320)
+            SplitPane(fraction: $splitFraction, minPaneWidth: Self.minPaneWidth) {
+                editor
+            } right: {
+                reader
             }
         }
     }
@@ -142,6 +166,46 @@ public struct MainDocumentView: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
         .background(Color.orange.opacity(0.12))
+    }
+
+    // MARK: - 文件夹授权（沙盒）
+
+    private var folderAccessBanner: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "photo.badge.exclamationmark")
+                .foregroundColor(.secondary)
+                .accessibilityHidden(true)
+            Text(L.folderAccessBannerMessage(folder: baseURL?.lastPathComponent ?? ""))
+                .font(.system(size: 12))
+            Spacer()
+            Button(L.folderAccessBannerButton) { requestFolderAccess() }
+                .controlSize(.small)
+            Button {
+                folderAccessDismissed = true
+            } label: {
+                Image(systemName: "xmark")
+            }
+            .buttonStyle(.borderless)
+            .accessibilityLabel(L.dismiss)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(Color.accentColor.opacity(0.10))
+    }
+
+    private func updateFolderAccessNeeded() {
+        guard let baseURL, parsedDoc.blocks.contains(where: \.containsLocalImage) else {
+            folderAccessNeeded = false
+            return
+        }
+        folderAccessNeeded = FolderAccess.shared.needsAccess(to: baseURL)
+    }
+
+    private func requestFolderAccess() {
+        guard let baseURL else { return }
+        FolderAccess.shared.requestAccess(to: baseURL, from: NSApp.keyWindow) { _ in
+            updateFolderAccessNeeded()
+        }
     }
 
     // MARK: - 外部修改热重载

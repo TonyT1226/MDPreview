@@ -139,10 +139,42 @@ struct ReaderPiecesTests {
         }
     }
 
+    /// 只有一个 `>` 的引用渲染出来是空文本，不占字符。它在末尾或在改动处前面时，末尾换行的换算不能落在它上面
+    @Test("空引用块在末尾或中间时，增量更新与整篇渲染一致", arguments: [
+        ["第一段\n\n>", "改过的第一段\n\n>"],
+        ["第一段\n\n第二段\n\n>", "第一段\n\n>"],
+        ["第一段\n\n>\n\n第二段", "第一段\n\n>"],
+        ["第一段\n\n>", "第一段\n\n>\n\n第二段"],
+        [">", "第一段\n\n>"],
+        ["第一段\n\n>", ">"],
+        [">\n\n第一段", ">"],
+    ])
+    func emptyBlocks(steps: [String]) {
+        let storage = NSTextStorage()
+        let pieces = ReaderPieces()
+        for text in steps {
+            let parsed = MarkdownASTParser.parse(markdown: text)
+            pieces.update(to: parsed.blocks, renderer: renderer, storage: storage)
+            let full = renderer.render(parsed.blocks)
+            #expect(storage.string == full.text.string)
+            #expect(pieces.headings.map(\.location) == full.headings.map(\.location))
+        }
+    }
+
+    @Test("最后一块是空引用时，重渲染前面的图片块不越界")
+    func rerenderBeforeEmptyBlock() {
+        let parsed = MarkdownASTParser.parse(markdown: "![图](a.png)\n\n>")
+        let storage = NSTextStorage()
+        let pieces = ReaderPieces()
+        pieces.update(to: parsed.blocks, renderer: renderer, storage: storage)
+        #expect(pieces.rerender(where: \.containsImage, renderer: renderer, storage: storage) == 1)
+        #expect(storage.string == renderer.render(parsed.blocks).text.string)
+    }
+
     @Test("随机编辑与整篇渲染一致")
     func randomEdits() {
         var rng = SystemRandomNumberGenerator()
-        let fragments = ["# H\n\n", "段落\n\n", "- [ ] t\n", "- a\n", "> q\n\n", "```\nc\n```\n\n", "---\n\n", "1. o\n", "\n\n", "字"]
+        let fragments = ["# H\n\n", "段落\n\n", "- [ ] t\n", "- a\n", "> q\n\n", "```\nc\n```\n\n", "---\n\n", "1. o\n", "\n\n", "字", ">", ">\n\n"]
         var text = sample
         let storage = NSTextStorage()
         let pieces = ReaderPieces()

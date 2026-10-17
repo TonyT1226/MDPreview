@@ -1,11 +1,11 @@
-# MDPreview
+# Markit
 
-<img src="Resources/AppIcon.png" alt="MDPreview" width="96" align="right">
+<img src="Resources/AppIcon.png" alt="Markit" width="96" align="right">
 
 English · [简体中文](README.zh-Hans.md)
 
 A Markdown reader and light editor for macOS. Written with SwiftUI, AppKit and
-`apple/swift-markdown`. No WebView.
+`apple/swift-markdown`. No WebView. Called MDPreview before v2.0.
 
 Current version: v1.5.0 · Requires macOS 14+ · MIT license
 
@@ -23,7 +23,7 @@ Current version: v1.5.0 · Requires macOS 14+ · MIT license
   horizontal rules, images (local and remote).
 - **Code highlighting** for Swift, Python, JavaScript / TypeScript, JSON, shell, Rust and Go.
 - **Outline sidebar** built from H1–H6. Collapsible, click to jump, follows the scroll position.
-- **Links**: `#heading` anchors jump within the document; relative `.md` links open in MDPreview.
+- **Links**: `#heading` anchors jump within the document; relative `.md` links open in Markit.
 - **Task lists**: tick a checkbox in the reading view and the source file is updated.
 - **Editor** on TextKit 2 with line numbers. Markdown syntax coloring can be turned on in Settings.
 - **Editing help**: `⌘B` / `⌘I` / `⌘K` / `⇧⌘K` for bold / italic / link / inline code; Return continues
@@ -32,7 +32,7 @@ Current version: v1.5.0 · Requires macOS 14+ · MIT license
 - **Settings** (`⌘,`): font, font size, line spacing, content width, light / dark / system theme.
   `⌘=` / `⌘-` / `⌘0` change the font size.
 - **Export to PDF and print** (`⌥⌘P` / `⌘P`).
-- **Reload on external change**: if another app changes the file, MDPreview reloads it.
+- **Reload on external change**: if another app changes the file, Markit reloads it.
   If you have unsaved edits, it asks first.
 - **Finder previews**: Quick Look (space bar) and file thumbnails show the formatted document.
 - **Languages**: English and Simplified Chinese, following the system setting.
@@ -84,6 +84,11 @@ The reading view re-renders only the blocks that changed. On a 160 KB document, 
 takes about 30 ms instead of about 0.8 s. Reloading after an external change no longer marks the
 document as edited, and a deleted file that comes back is watched again.
 
+**v2.0 (in progress) — Markit, Mac App Store**
+Renamed from MDPreview to Markit.
+Release on the Mac App Store, plus a notarized DMG. The app runs in the sandbox: before it shows local
+images or opens linked files, it asks you to allow access to the document's folder.
+
 **Later**
 Inline images, math, HTML blocks, more accurate code highlighting, more languages.
 
@@ -105,24 +110,24 @@ Inline images, math, HTML blocks, more accurate code highlighting, more language
 
 ## Install
 
-Download `MDPreview-<version>.dmg` (for example `MDPreview-1.5.0.dmg`) from [Releases](https://github.com/TonyT1226/MDPreview/releases)
-and drag `MDPreview.app` into Applications.
+Download `Markit-<version>.dmg` (for example `Markit-2.0.0.dmg`) from [Releases](https://github.com/TonyT1226/MDPreview/releases)
+and drag `Markit.app` into Applications.
 
 The app is not notarized, so macOS blocks the first launch:
 
-- **macOS 15 and later**: double-click MDPreview and close the warning. Open System Settings ›
-  Privacy & Security, scroll down to Security, click **Open Anyway** next to MDPreview, and
+- **macOS 15 and later**: double-click Markit and close the warning. Open System Settings ›
+  Privacy & Security, scroll down to Security, click **Open Anyway** next to Markit, and
   enter your password. After that it opens normally.
-- **macOS 14**: right-click MDPreview in Applications and choose Open.
+- **macOS 14**: right-click Markit in Applications and choose Open.
 
 Or, in Terminal, remove the download quarantine flag once:
 
 ```bash
-xattr -dr com.apple.quarantine /Applications/MDPreview.app
+xattr -dr com.apple.quarantine /Applications/Markit.app
 ```
 
 The Finder preview extensions become active after the app is in Applications and has been
-opened once. If the space-bar preview still shows plain text, check that MDPreview is enabled
+opened once. If the space-bar preview still shows plain text, check that Markit is enabled
 in System Settings › General › Login Items & Extensions › Quick Look.
 
 ## Build from source
@@ -150,6 +155,10 @@ sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for more.
+
+## Privacy
+
+Markit does not collect any data. See the [privacy policy](docs/PRIVACY.md).
 
 ## License
 

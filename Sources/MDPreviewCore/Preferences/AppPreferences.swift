@@ -12,6 +12,8 @@ public enum PrefKey {
     public static let editorLineNumbers = "editor.lineNumbers"
     /// 插入图片时的说明弹窗被用户选了「不再显示」
     public static let imageNoticeSuppressed = "editor.imageNoticeSuppressed"
+    /// 沙盒里用户授权过的文件夹：路径 → security-scoped bookmark（见 `FolderAccess`）
+    public static let folderBookmarks = "sandbox.folderBookmarks"
 }
 
 public enum ReaderFontFamily: String, CaseIterable, Identifiable, Sendable {

@@ -40,6 +40,13 @@ final class ReaderPieces {
             }
         }
 
+        // 渲染结果为空的块（比如只有一个 `>` 的引用）不占字符，不能当边界：
+        // storage 末尾少的那个换行属于最后一个有内容的片段，下面的换算要落在它上面
+        if starts[old.count] == starts[old.count - suffix] { suffix = 0 }
+        if suffix == 0 {
+            while prefix > 0, pieces[prefix - 1].text.length == 0 { prefix -= 1 }
+        }
+
         let middle = (prefix..<(newBlocks.count - suffix)).map {
             renderer.renderPiece(newBlocks[$0], isFirst: $0 == 0)
         }
@@ -89,14 +96,16 @@ final class ReaderPieces {
         let targets = blocks.indices.filter { predicate(blocks[$0]) }
         guard !targets.isEmpty else { return 0 }
         let realLength = storage.length
+        // storage 末尾少的那个换行属于最后一个有内容的片段（后面可能还有渲染为空的块）
+        let lastWithText = pieces.lastIndex { $0.text.length > 0 }
         storage.beginEditing()
         // 从后往前换，前面片段的位置不受影响
         for i in targets.reversed() {
             let piece = renderer.renderPiece(blocks[i], isFirst: i == 0)
             var range = NSRange(location: starts[i], length: pieces[i].text.length)
             var text = piece.text
-            if i == blocks.count - 1 {
-                // 最后一块在 storage 里没有末尾换行
+            if i == lastWithText {
+                // 这一块在 storage 里没有末尾换行
                 range.length = realLength - range.location
                 text = text.attributedSubstring(from: NSRange(location: 0, length: max(text.length - 1, 0)))
             }

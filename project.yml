@@ -11,10 +11,10 @@ options:
 
 settings:
   base:
-    MARKETING_VERSION: "1.5.0"
+    MARKETING_VERSION: "2.0.0"
     CURRENT_PROJECT_VERSION: "1"
     SWIFT_VERSION: "6.0"
-    DEVELOPMENT_TEAM: ""
+    DEVELOPMENT_TEAM: 6R935F5ZPV
     CODE_SIGN_STYLE: Automatic
     ENABLE_HARDENED_RUNTIME: YES
 
@@ -28,14 +28,33 @@ targets:
     platform: macOS
     sources:
       - path: Sources/App
+        excludes:
+          - AppIcon.icon
+      # Icon Composer 图标（Liquid Glass）。XcodeGen 会把 .icon 当成普通文件夹，所以单独按文件加入
+      - path: Sources/App/AppIcon.icon
+        type: file
+        buildPhase: resources
+      # 隐私清单（required-reason API：UserDefaults、stat/fstat）。三个 target 都链接 MDPreviewCore，都要带
+      - path: Sources/PrivacyInfo.xcprivacy
+        buildPhase: resources
     dependencies:
       - package: MDPreviewCore
         product: MDPreviewCore
       - target: MDPreviewQuickLook
       - target: MDPreviewThumbnail
+    # Mac App Store 要求开沙盒。同目录的图片、链接的文档靠用户授权文件夹（FolderAccess）
+    entitlements:
+      path: Sources/App/MDPreview.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.files.user-selected.read-write: true
+        com.apple.security.files.bookmarks.app-scope: true
+        com.apple.security.network.client: true
+        com.apple.security.print: true
     settings:
       base:
-        PRODUCT_NAME: MDPreview
+        # 用户看到的名字是 Markit（v1.6 改名）；工程、target、模块名仍叫 MDPreview
+        PRODUCT_NAME: Markit
         PRODUCT_BUNDLE_IDENTIFIER: com.mdpreview.app
         INFOPLIST_FILE: Sources/App/Info.plist
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
@@ -53,6 +72,8 @@ targets:
     platform: macOS
     sources:
       - path: Sources/QuickLookPreview
+      - path: Sources/PrivacyInfo.xcprivacy
+        buildPhase: resources
     dependencies:
       - package: MDPreviewCore
         product: MDPreviewCore
@@ -60,7 +81,7 @@ targets:
     info:
       path: Sources/QuickLookPreview/Info.plist
       properties:
-        CFBundleDisplayName: MDPreview Quick Look
+        CFBundleDisplayName: Markit Quick Look
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         LSMinimumSystemVersion: $(MACOSX_DEPLOYMENT_TARGET)
@@ -89,6 +110,8 @@ targets:
     platform: macOS
     sources:
       - path: Sources/QuickLookThumbnail
+      - path: Sources/PrivacyInfo.xcprivacy
+        buildPhase: resources
     dependencies:
       - package: MDPreviewCore
         product: MDPreviewCore
@@ -96,7 +119,7 @@ targets:
     info:
       path: Sources/QuickLookThumbnail/Info.plist
       properties:
-        CFBundleDisplayName: MDPreview Thumbnail
+        CFBundleDisplayName: Markit Thumbnail
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         LSMinimumSystemVersion: $(MACOSX_DEPLOYMENT_TARGET)

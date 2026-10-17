@@ -181,7 +181,7 @@ md-reader/
 | 核心单测 | `swift test`（swift-testing；解析 / 渲染 / 阅读视图交互 / 本地化 / 源码着色 / `FileMonitor` / 打印）。仓库在 iCloud 目录时加 `--scratch-path` 指到别处 |
 | 生成工程 | `brew install xcodegen && xcodegen generate` → `MDPreview.xcodeproj` |
 | 运行 / 预览 / 归档 | `open MDPreview.xcodeproj`（需完整版 Xcode，非 CLT） |
-| 打包 DMG | `./package_app.sh`：Release 免签构建 → `ditto` 到 `/tmp` 清扩展属性 → 两个扩展带 entitlements ad-hoc 签名 → 签 App → `hdiutil` 组 DMG |
+| 打包 DMG | `./package_app.sh`：Release 免签构建 → `ditto` 到 `/tmp` 清扩展属性 → 两个扩展带 entitlements ad-hoc 签名 → 带沙盒 entitlements 签 App → `hdiutil` 组 DMG |
 | CI | `.github/workflows/ci.yml`：`macos-15` 跑 `swift build` / `swift test` / `xcodebuild`（`CODE_SIGNING_ALLOWED=NO`） |
 | 分发 | DMG 不入库，作为 GitHub Release 附件；正式分发需 Developer ID + `notarytool` |
 
@@ -194,12 +194,12 @@ md-reader/
 
 | # | 限制 | 影响 | 计划 |
 | :-- | :-- | :-- | :-- |
-| G8 | 行内图片仅占位符；单段落多图按普通段落处理；无数学公式；HTML 块按等宽灰字原样显示 | 富文档还原度不足 | 以后 |
+| G8 | 行内图片仅占位符；单段落多图按普通段落处理；无数学公式；HTML 块按等宽灰字原样显示 | 富文档还原度不足 | v2.1（图片点击查看除外） |
 | G10 | 代码着色为启发式逐行正则，跨行字符串 / 复杂语法会错色；语言有限 | 观感瑕疵 | 暂不排期 |
 | G14 | 代码块不横向滚动，长行折行显示；`NSTextBlock` 没有圆角 | 与 v1.2 的 SwiftUI 版观感不同 | 接受 |
 | G16 | Quick Look 扩展在沙盒里没有网络权限，远程图片显示占位；相对路径图片能否读到取决于系统授予的访问范围 | 预览图片不全 | 接受 |
 | G17 | 核心库静态链接进 App 和两个扩展，DMG 从约 3.6MB 变成约 7.5MB | 体积 | 暂不排期（可改成动态框架） |
-| G18 | 没有公证：DMG 仍是 ad-hoc 签名 | 首次打开要到「隐私与安全性」点「仍要打开」（macOS 14 可右键 › 打开） | 需要 Developer ID |
+| G18 | 没有公证：DMG 仍是 ad-hoc 签名 | 首次打开要到「隐私与安全性」点「仍要打开」（macOS 14 可右键 › 打开） | v2.0 |
 
 **v1.5 已解决**：~~G12 静默刷新标成「已编辑」、文件删后停止监听~~、~~G15 每次改动整篇重排~~。
 **v1.3 已解决**：~~G1 阅读区不能跨块选择 / 无 ⌘F~~、~~G2 无偏好设置~~、~~G3 编辑器无行号~~、
@@ -247,10 +247,70 @@ md-reader/
 性能（`MDP_PERF=1 swift test --filter PerfProbe`，Debug 构建，160KB 文档，视口在文档中部，改一个字）：
 整篇重排约 0.8 秒，增量更新约 30 毫秒。解析仍是整篇（约 180 毫秒），在后台线程，不占主线程。
 
+### v2.0 — 改名 Markit，上架 Mac App Store（进行中，本地分支 `v1.6-sandbox`，上架前不推送）
+
+2.0.0 是第一个 App Store 版本（原计划叫 1.6.0；改名后定为 2.0.0：比所有旧版本号高，标签也不和已有的 `v1.0.0` 冲突）。同一版本在 GitHub 发布经过公证的 DMG。
+
+改名：从 2.0 起 App 叫 **Markit**（「MDPreview」在 App Store 已被占用，而且 App 不只是预览）。商店名称 `Markit: Simple Markdown Editor`。
+改的是用户看得到的名字：`PRODUCT_NAME`（`Markit.app`）、显示名、两个扩展的显示名、界面文字、README、隐私政策、DMG / pkg 文件名。
+没改的：Bundle ID（`com.mdpreview.app`）、工程 / target / scheme 名、`MDPreviewCore` 模块名、本文档其余部分的叫法。GitHub 仓库名在发布当天改。
+
+| 项 | 状态 |
+| :-- | :-- |
+| **2.0.1 沙盒** ✅ | 主 App 开 App Sandbox：用户选择的文件读写、app-scope bookmark、网络客户端、打印（`Sources/App/MDPreview.entitlements`，在 `project.yml` 里声明）。 |
+| **2.0.2 文件夹授权** ✅ | 沙盒里只能访问打开的那个文件。`FolderAccess` 让用户在打开面板里选中文档所在文件夹（或其上级），存成 security-scoped bookmark，启动时恢复。用在三处：文档有本地图片时窗口顶部的提示条、点击指向本地文件的链接、粘贴图片写 `assets/`。设置里「文件夹访问」可查看、移除（只在沙盒版显示）。不在沙盒里时不做任何事。已在真实沙盒构建里验证：授权后图片显示、链接能打开、重启后授权仍在。 |
+| **2.0.3 监听回退** ✅ | 沙盒里打不开文档所在目录，`FileMonitor` 在文件被删后改为每秒检查一次。 |
+| **2.0.4 商店字段** ✅ | `Info.plist`：`LSApplicationCategoryType`（productivity）、`ITSAppUsesNonExemptEncryption = false`。 |
+| **2.0.5 隐私清单** ✅ | `Sources/PrivacyInfo.xcprivacy` 打进 App 和两个扩展：不跟踪、不收集数据；required-reason API：`UserDefaults`（CA92.1）、`stat` / `fstat`（3B52.1）。依赖库没有用到这类 API。 |
+| **2.0.6 隐私政策** ✅ | `docs/PRIVACY.md` / `docs/PRIVACY.zh-Hans.md`，README 链接。 |
+| **2.0.7 开发者账号** | 账号已开通（2026-10-09），Team ID 写进 `project.yml`。Bundle ID 保持 `com.mdpreview.app`，App Store Connect 记录已建（Apple ID 6821136481）。Developer ID 证书已有；Apple Distribution / Mac Installer Distribution 证书还要确认。 |
+| **2.0.8 归档上传** | 脚本已写，等证书到位后实跑。`archive_app_store.sh`：`xcodebuild archive` + `-exportArchive`（app-store-connect，自动签名），产物在 `/tmp`，导出 `.pkg`；`--upload` 直接上传。`package_app.sh`：有 Developer ID 证书时用它签名，存过 `notarytool` 凭据时自动公证并 staple；都没有时仍是 ad-hoc。版本号已改 2.0.0。 |
+| **2.0.9 商店资料** | 未做。截图（1280×800 / 1440×900 / 2560×1600 / 2880×1800）、中英文描述和关键词、隐私问卷选「不收集数据」、年龄分级、价格、地区。 |
+| **2.0.10 发布** | 未做。提交审核前，隐私政策的网址必须能打开，所以要先单独把隐私政策推到 main；审核通过后合并分支、推送、发 GitHub Release。 |
+
+GitHub 上的 DMG 也开沙盒，和 App Store 版用同一份构建（2026-09-27 定）。DMG 用户同样要授权文件夹。`package_app.sh` 签 App 时已带上 `MDPreview.entitlements`。
+
+还要确认：从 1.5（没开沙盒）升级到 2.0 后，偏好设置在 `~/Library/Preferences`，沙盒版读的是容器里的那份，字体、主题等设置可能回到默认值。要在真实升级场景里验证；如果确实丢失，用 `container-migration.plist` 迁移。
+
+### v2.1 — 手动保存、分屏同步、更完整的渲染（规划中，未开始）
+
+2026-10-10 与用户讨论定下范围。2.0.0 通过审核、发布之后才发 2.1；开发从 `v1.6-sandbox` 切新分支，在那之前不推送。
+下面每一项都还没验证过，「做法」是思路，不是已经确认的实现。
+
+**保存**
+
+| 项 | 内容 |
+| :-- | :-- |
+| **2.1.1 手动保存** | 现在用 SwiftUI 的 `DocumentGroup` + `FileDocument`，系统默认就地自动保存，所以编辑内容会自己写进文件，关窗也不会问。改成手动：关掉 `NSDocument.autosavesInPlace`，之后 ⌘S、关窗 / 退出时的「是否保存」、标题栏「已编辑」、复原到上次存储的版本都由系统提供。**先做原型验证 `DocumentGroup` 创建的 NSDocument 是否认这个设置**；不认的话退路是自己用 `NSDocument` 子类托管窗口，改动大得多。外部修改的冲突框和热重载（`revert`）按 `document.text` 与磁盘内容比较，和手动保存兼容。待定：阅读区点任务复选框是否算「未保存的修改」（倾向算，行为与编辑一致）。 |
+| **2.1.2 定时保存** | 偏好设置里加「自动保存」：关 / 1 / 5 / 10 分钟，默认关。只保存已有文件路径且有改动的文档；未命名文档不动，避免定时弹出「存储为」面板。 |
+| **2.1.3 崩溃恢复** | 手动保存后，崩溃或断电会丢未保存的内容。用 `NSDocument.autosavesDrafts` 把草稿存到系统的 Autosave Information，不碰原文件，下次打开时恢复。要在沙盒里验证草稿目录可用。 |
+| **2.1.4 未保存提示** | 悬浮状态条上显示「未保存」，不只靠标题栏的小圆点。 |
+
+发布说明里要写明：从 2.1 起不再自动保存。
+
+**分屏**
+
+| 项 | 内容 |
+| :-- | :-- |
+| **2.1.5 同步滚动** | 编辑区和阅读区现在是两个独立的滚动视图，没有联动；`MarkdownBlock` 里只有任务列表项带源码行号。做法：解析时给每个顶层块记起止行号（swift-markdown 的节点有 `range`）；两边各做「行号 ↔ y 坐标」换算，块内按比例插值；用户正在滚的一边驱动另一边，程序触发的滚动忽略，避免来回抖。偏好设置里加「同步滚动」开关，默认开。不用整篇百分比：图片、表格、代码块多的文档会错位。行号映射做好之后，「点阅读区跳到编辑区对应行」「打字时阅读区跟到正在改的块」都很便宜，顺手做。 |
+
+**阅读区渲染**（`ReaderRenderer` 同时给 Quick Look 预览和缩略图用，这三项都会影响到它们；Quick Look 扩展没有网络权限，G16）
+
+| 项 | 内容 |
+| :-- | :-- |
+| **2.1.6 CJK 软换行** | 中文段落里的软换行现在渲染成空格（「行程。 数据」）。CJK 字符之间的软换行应该直接去掉。小改动，先做。 |
+| **2.1.7 行内图片** (G8) | 现在只有独占一段的图片按块渲染；行内图片是占位符，一段里有多张图按普通段落处理。改成在段落文字里用 `NSTextAttachment` 放图，复用 `renderImage` 的加载、失败占位和 `RemoteImageCache`。要定的：宽度上限（版心宽度）、与文字基线的对齐、alt 文字。要保证 1.5.1 的增量更新仍然成立：远程图片加载完只重渲染含图片的块，行内图片所在的段落也要走这条路。 |
+| **2.1.8 HTML 块** (G8) | 现在原样显示成等宽灰字。先做有限子集，不引入 WebView，也不用 `NSAttributedString(html:)`（它走 WebKit，只能在主线程）。候选子集：`<!-- 注释 -->` 隐藏；`<br>`；`<img src width>`；`<a href>`；`<kbd>`、`<sub>`、`<sup>`；`<p align="center">` 居中；`<details><summary>` 折叠。其他标签仍按现在的方式原样显示。行内 HTML（swift-markdown 的 `InlineHTML`）一并处理。具体子集做之前再确认。 |
+| **2.1.9 数学公式** | `$…$` 行内、`$$…$$` 块级。swift-markdown 不解析公式，要在文本层识别：代码块和行内代码里不识别；行内 `$` 要求开头后不是空白、结尾前不是空白且后面不是数字，避免把「$5 和 $10」当公式。渲染不用 WebView，需要原生排版 LaTeX 的库，候选是 SwiftMath（CoreText，MIT）——**未验证**它的 macOS 支持、公式覆盖面和体积。静态链接会同时进 App 和两个扩展（G17），也要核对它的隐私清单要求。编辑区的源码着色是否给 `$` 着色，到时再定。 |
+
+范围偏大。如果拖得太久，数学公式最先往后放（2.2）。
+
+测试：`ParserTests` 加公式、HTML、行内图片用例；`ReaderRendererTests` / `ReaderPiecesTests` 覆盖新块在增量更新里的 `rendersSame`；`SnapshotTests` 补快照；`PerfProbe` 复查 160KB 文档的增量更新耗时不退化；Quick Look 扩展手动看一遍。编辑区的任何改动都不能干扰输入法组字（v1.1 回归过）。
+
 ### 暂不排期
 
 - 核心库改动态框架（G17）；代码高亮改词法分析（G10）。
-- 行内图片、单段多图、图片点击查看（G8）；数学公式；HTML 块有限渲染。
+- 图片点击查看（G8 的一部分）。
 - 编辑器当前行整行高亮（需要换掉 `scrollableTextView()`，v1.2 试过会冲突）；括号自动配对（易与输入法冲突）。
 - RTL 审查、更多语言（`ja` / `ko` / `de` / `fr`）。
 - Markdown 方言开关（脚注、定义列表、`[[wiki]]` 链接）。
